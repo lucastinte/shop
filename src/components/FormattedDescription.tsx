@@ -5,109 +5,28 @@ import {
   ChevronUp, 
   Copy, 
   Check, 
-  Sparkles, 
   FileText,
   ShieldCheck,
-  PackageCheck,
-  Tag
+  PackageCheck
 } from 'lucide-react';
 
 interface FormattedDescriptionProps {
   description?: string;
-  maxInitialItems?: number;
+  maxInitialLines?: number;
   className?: string;
-}
-
-interface ParsedItem {
-  type: 'short_spec' | 'feature' | 'bullet' | 'heading' | 'paragraph';
-  title?: string;
-  text: string;
 }
 
 export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
   description,
-  maxInitialItems = 8,
+  maxInitialLines = 10,
   className = '',
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const { shortSpecs, contentItems } = useMemo(() => {
-    if (!description || !description.trim()) {
-      return { shortSpecs: [], contentItems: [] };
-    }
-
-    const lines = description.split('\n').map(l => l.trim()).filter(Boolean);
-    const specs: { key: string; value: string }[] = [];
-    const items: ParsedItem[] = [];
-
-    // Regex for key-value pair like "Batería: 95%" or "Compatibilidad: Diseñado para..."
-    const kvRegex = /^([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s()/-]{2,35}):\s*(.+)$/;
-    // Regex for bullet points like "- item", "* item", "• item", "✓ item"
-    const bulletRegex = /^[-*•✓✔+→▪]\s*(.+)$/;
-    // Regex for section headers like "--- Especificaciones ---" or "CARACTERÍSTICAS"
-    const headingRegex = /^(?:[-#=~*]{2,}\s*)?([A-ZÁÉÍÓÚÑ\s0-9]{3,35})(?:\s*[-#=~*]{2,})?:?$/;
-
-    for (const line of lines) {
-      // 1. Heading check
-      const headingMatch = line.match(headingRegex);
-      if (headingMatch && line.length <= 35 && line === line.toUpperCase() && !line.includes(':')) {
-        items.push({
-          type: 'heading',
-          text: headingMatch[1].trim(),
-        });
-        continue;
-      }
-
-      // 2. Bullet point check
-      const bulletMatch = line.match(bulletRegex);
-      if (bulletMatch) {
-        const bulletText = bulletMatch[1].trim();
-        // Check if bullet itself has Title: Description
-        const bulletKv = bulletText.match(kvRegex);
-        if (bulletKv) {
-          items.push({
-            type: 'feature',
-            title: bulletKv[1].trim(),
-            text: bulletKv[2].trim(),
-          });
-        } else {
-          items.push({
-            type: 'bullet',
-            text: bulletText,
-          });
-        }
-        continue;
-      }
-
-      // 3. Key-Value check
-      const kvMatch = line.match(kvRegex);
-      if (kvMatch && !line.startsWith('http')) {
-        const key = kvMatch[1].trim();
-        const value = kvMatch[2].trim();
-
-        // Short technical spec (e.g. "Estado: Nuevo", "Color: Azul", "Garantía: 6 meses")
-        if (key.length <= 18 && value.length <= 25) {
-          specs.push({ key, value });
-        } else {
-          // Longer detailed feature description
-          items.push({
-            type: 'feature',
-            title: key,
-            text: value,
-          });
-        }
-        continue;
-      }
-
-      // 4. Regular paragraph
-      items.push({
-        type: 'paragraph',
-        text: line,
-      });
-    }
-
-    return { shortSpecs: specs, contentItems: items };
+  const lines = useMemo(() => {
+    if (!description || !description.trim()) return [];
+    return description.split('\n').map(l => l.trim()).filter(Boolean);
   }, [description]);
 
   const handleCopy = () => {
@@ -120,21 +39,68 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
 
   if (!description || !description.trim()) {
     return (
-      <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-950/40 border border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500 text-xs italic">
+      <div className="p-4 rounded-2xl bg-gray-50/50 dark:bg-slate-950/30 border border-gray-150 dark:border-slate-800/60 text-gray-400 dark:text-slate-500 text-xs italic">
         Sin descripción adicional para este producto.
       </div>
     );
   }
 
-  const totalItemsCount = contentItems.length;
-  const isLong = totalItemsCount > maxInitialItems;
-  const visibleItems = isLong && !isExpanded 
-    ? contentItems.slice(0, maxInitialItems) 
-    : contentItems;
+  const isLong = lines.length > maxInitialLines;
+  const visibleLines = isLong && !isExpanded ? lines.slice(0, maxInitialLines) : lines;
+
+  // Render line naturally: detects bullet prefixes and key-value bolding inline
+  const renderLine = (line: string, index: number) => {
+    // Bullet detection (e.g. - item, • item, * item, ✓ item)
+    const bulletMatch = line.match(/^[-*•✓✔+→▪]\s*(.+)$/);
+    if (bulletMatch) {
+      const content = bulletMatch[1].trim();
+      const colonMatch = content.match(/^([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s()/-]{2,30}):\s*(.+)$/);
+
+      return (
+        <div key={index} className="flex items-start gap-2.5 pl-1 py-0.5">
+          <div className="w-4 h-4 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-1">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-gray-700 dark:text-slate-200 text-sm leading-relaxed text-left">
+            {colonMatch ? (
+              <>
+                <strong className="font-bold text-gray-900 dark:text-white">
+                  {colonMatch[1]}:
+                </strong>{' '}
+                {colonMatch[2]}
+              </>
+            ) : (
+              content
+            )}
+          </span>
+        </div>
+      );
+    }
+
+    // Line with "Título:" bolding
+    const colonMatch = line.match(/^([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s()/-]{2,30}):\s*(.+)$/);
+    if (colonMatch && !line.startsWith('http')) {
+      return (
+        <p key={index} className="text-gray-700 dark:text-slate-300 text-sm leading-relaxed text-left">
+          <strong className="font-bold text-gray-900 dark:text-white">
+            {colonMatch[1]}:
+          </strong>{' '}
+          {colonMatch[2]}
+        </p>
+      );
+    }
+
+    // Normal paragraph text
+    return (
+      <p key={index} className="text-gray-700 dark:text-slate-300 text-sm leading-relaxed text-left">
+        {line}
+      </p>
+    );
+  };
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Encabezado con Título y Copiar */}
+      {/* Encabezado con Título y Botón Copiar */}
       <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -163,88 +129,15 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
         </button>
       </div>
 
-      {/* Ficha Rápida: Solo para especificaciones técnicas cortas */}
-      {shortSpecs.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-1">
-          {shortSpecs.map((spec, idx) => (
-            <div 
-              key={idx} 
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100/80 dark:border-indigo-900/40 text-xs shadow-2xs"
-            >
-              <Tag className="w-3 h-3 text-indigo-500 shrink-0" />
-              <span className="text-gray-500 dark:text-slate-400 font-medium">
-                {spec.key}:
-              </span>
-              <span className="text-gray-900 dark:text-white font-bold">
-                {spec.value}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Lista Principal de Características y Párrafos */}
+      {/* Contenido Natural de la Descripción */}
       <div className="relative">
-        <div className="space-y-3 text-sm leading-relaxed">
-          {visibleItems.map((item, idx) => {
-            // Título de Sección
-            if (item.type === 'heading') {
-              return (
-                <div key={idx} className="pt-3 pb-1">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1 rounded-lg">
-                    <Sparkles className="w-3 h-3" />
-                    {item.text}
-                  </span>
-                </div>
-              );
-            }
-
-            // Característica con Título y Explicación
-            if (item.type === 'feature') {
-              return (
-                <div 
-                  key={idx} 
-                  className="p-3.5 sm:p-4 rounded-2xl bg-gray-50/80 dark:bg-slate-950/50 border border-gray-150 dark:border-slate-800/80 space-y-1 shadow-2xs transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 dark:bg-indigo-400 shrink-0" />
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                      {item.title}
-                    </h4>
-                  </div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-300 pl-4 leading-relaxed text-left">
-                    {item.text}
-                  </p>
-                </div>
-              );
-            }
-
-            // Viñeta Simple
-            if (item.type === 'bullet') {
-              return (
-                <div key={idx} className="flex items-start gap-2.5 pl-1 py-0.5">
-                  <div className="w-5 h-5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-gray-700 dark:text-slate-200 text-xs sm:text-sm text-left leading-relaxed">
-                    {item.text}
-                  </span>
-                </div>
-              );
-            }
-
-            // Párrafo normal
-            return (
-              <p key={idx} className="text-gray-600 dark:text-slate-300 text-xs sm:text-sm text-left leading-relaxed whitespace-pre-wrap">
-                {item.text}
-              </p>
-            );
-          })}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gray-50/70 dark:bg-slate-950/40 border border-gray-150 dark:border-slate-800/80 space-y-2.5 shadow-2xs">
+          {visibleLines.map((line, idx) => renderLine(line, idx))}
         </div>
 
         {/* Degradado suave al estar colapsado */}
         {isLong && !isExpanded && (
-          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none rounded-b-2xl" />
         )}
       </div>
 
@@ -257,12 +150,12 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
         >
           {isExpanded ? (
             <>
-              <span>Ver menos detalles</span>
+              <span>Ver menos</span>
               <ChevronUp className="w-3.5 h-3.5" />
             </>
           ) : (
             <>
-              <span>Ver todos los detalles ({totalItemsCount - maxInitialItems} más)</span>
+              <span>Leer descripción completa ({lines.length - maxInitialLines} líneas más)</span>
               <ChevronDown className="w-3.5 h-3.5" />
             </>
           )}

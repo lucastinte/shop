@@ -27,7 +27,8 @@ import {
     ShieldCheck,
     Truck,
     HelpCircle,
-    Layers
+    Layers,
+    Play
 } from 'lucide-react';
 
 const conditionLabel: Record<string, string> = {
@@ -67,7 +68,7 @@ function VideoPlayer({ url }: { url: string }) {
             src={url}
             controls
             className="w-full rounded-2xl bg-black shadow-md border border-slate-800"
-            style={{ maxHeight: '420px' }}
+            style={{ maxHeight: '480px' }}
         />
     );
 }
@@ -92,6 +93,7 @@ export default function StoreProduct({ id }: { id: string }) {
     
     // Galería
     const [activeIdx, setActiveIdx] = useState(0);
+    const [isVideoActive, setIsVideoActive] = useState(false);
     const [mainImgError, setMainImgError] = useState(false);
     const [showLightbox, setShowLightbox] = useState(false);
     
@@ -211,11 +213,13 @@ export default function StoreProduct({ id }: { id: string }) {
     };
 
     const handleNextImage = () => {
+        setIsVideoActive(false);
         setActiveIdx(prev => (prev + 1) % allImages.length);
         setMainImgError(false);
     };
 
     const handlePrevImage = () => {
+        setIsVideoActive(false);
         setActiveIdx(prev => (prev - 1 + allImages.length) % allImages.length);
         setMainImgError(false);
     };
@@ -422,19 +426,19 @@ export default function StoreProduct({ id }: { id: string }) {
                 </nav>
             </div>
 
-            <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 space-y-12">
+            <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 space-y-10">
                 {/* CAJA PRINCIPAL DEL PRODUCTO */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden transition-colors">
-                    <div className="grid grid-cols-1 md:grid-cols-12">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-150 dark:border-slate-800 overflow-hidden transition-colors">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-0 md:gap-4">
                         
-                        {/* SECCIÓN IZQUIERDA: GALERÍA DE IMÁGENES (Sticky en Desktop) */}
-                        <div className="md:col-span-6 p-4 sm:p-6 lg:p-8 bg-gray-50/50 dark:bg-slate-950/40 border-b md:border-b-0 md:border-r border-gray-100 dark:border-slate-800">
-                            <div className="md:sticky md:top-24 space-y-4">
+                        {/* SECCIÓN IZQUIERDA: GALERÍA DE IMÁGENES & MEDIA */}
+                        <div className="md:col-span-6 p-4 sm:p-6 lg:p-8">
+                            <div className="md:sticky md:top-24 space-y-3.5 self-start">
                                 
-                                {/* Visualizador de Imagen Principal */}
-                                <div className="aspect-square rounded-2xl overflow-hidden bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 relative group/viewer shadow-xs">
+                                {/* Visualizador Principal (Foto o Video) */}
+                                <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-slate-950 border border-gray-200/80 dark:border-slate-800 relative group/viewer shadow-xs">
                                     {/* Badges Flotantes sobre la Imagen */}
-                                    <div className="absolute top-3.5 left-3.5 z-10 flex flex-wrap gap-2">
+                                    <div className="absolute top-3.5 left-3.5 z-10 flex flex-wrap gap-2 pointer-events-none">
                                         <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm ${conditionColor[currentCondition] || conditionColor.nuevo}`}>
                                             {conditionLabel[currentCondition] || currentCondition}
                                         </span>
@@ -449,7 +453,12 @@ export default function StoreProduct({ id }: { id: string }) {
                                         )}
                                     </div>
 
-                                    {activeUrl && !mainImgError ? (
+                                    {/* Si el video está activo en el visor principal */}
+                                    {isVideoActive && item.storeVideoUrl ? (
+                                        <div className="w-full h-full flex items-center justify-center bg-black">
+                                            <VideoPlayer url={item.storeVideoUrl} />
+                                        </div>
+                                    ) : activeUrl && !mainImgError ? (
                                         <>
                                             <img
                                                 key={activeUrl}
@@ -494,12 +503,12 @@ export default function StoreProduct({ id }: { id: string }) {
                                 </div>
 
                                 {/* Indicadores de Puntos para Mobile */}
-                                {allImages.length > 1 && (
+                                {allImages.length > 1 && !isVideoActive && (
                                     <div className="flex items-center justify-center gap-1.5 md:hidden py-1">
                                         {allImages.map((_, i) => (
                                             <button
                                                 key={i}
-                                                onClick={() => { setActiveIdx(i); setMainImgError(false); }}
+                                                onClick={() => { setIsVideoActive(false); setActiveIdx(i); setMainImgError(false); }}
                                                 className={`h-1.5 rounded-full transition-all ${
                                                     i === activeIdx 
                                                     ? 'w-6 bg-indigo-600 dark:bg-indigo-400' 
@@ -511,15 +520,16 @@ export default function StoreProduct({ id }: { id: string }) {
                                     </div>
                                 )}
 
-                                {/* Miniaturas de imágenes (Desktop & Tablets) */}
-                                {allImages.length > 1 && (
-                                    <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                                {/* Tira de Miniaturas de imágenes y botón de Video */}
+                                {(allImages.length > 1 || item.storeVideoUrl) && (
+                                    <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar pt-1">
+                                        {/* Miniaturas de Fotos */}
                                         {allImages.map((url, i) => (
                                             <button
                                                 key={url}
-                                                onClick={() => { setActiveIdx(i); setMainImgError(false); }}
-                                                className={`shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer bg-white dark:bg-slate-900 ${
-                                                    i === activeIdx 
+                                                onClick={() => { setIsVideoActive(false); setActiveIdx(i); setMainImgError(false); }}
+                                                className={`shrink-0 w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer bg-white dark:bg-slate-900 ${
+                                                    !isVideoActive && i === activeIdx 
                                                     ? 'border-indigo-500 ring-2 ring-indigo-500/20 scale-[1.02] shadow-sm' 
                                                     : 'border-gray-200 dark:border-slate-800 opacity-60 hover:opacity-100'
                                                 }`}
@@ -527,25 +537,33 @@ export default function StoreProduct({ id }: { id: string }) {
                                                 <img src={url} alt="" className="w-full h-full object-cover" />
                                             </button>
                                         ))}
-                                    </div>
-                                )}
 
-                                {/* Video del producto */}
-                                {item.storeVideoUrl && (
-                                    <div className="mt-4 space-y-2 pt-4 border-t border-gray-200/60 dark:border-slate-800/80">
-                                        <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                            <span>Video de Demostración</span>
-                                        </h4>
-                                        <VideoPlayer url={item.storeVideoUrl} />
+                                        {/* Botón de Miniatura para Video */}
+                                        {item.storeVideoUrl && (
+                                            <button
+                                                onClick={() => setIsVideoActive(true)}
+                                                className={`shrink-0 w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                                                    isVideoActive
+                                                    ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 ring-2 ring-red-500/20 scale-[1.02]'
+                                                    : 'border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950/60 text-gray-500 dark:text-slate-400 opacity-70 hover:opacity-100'
+                                                }`}
+                                                title="Ver video del producto"
+                                            >
+                                                <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center">
+                                                    <Play className="w-3 h-3 fill-current ml-0.5" />
+                                                </div>
+                                                <span className="text-[10px] font-bold">Video</span>
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* SECCIÓN DERECHA: INFORMACIÓN Y COMPRA */}
+                        {/* SECCIÓN DERECHA: INFORMACIÓN, OPCIONES Y COMPRA */}
                         <div className="md:col-span-6 p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
                             
-                            {/* Encabezado: Categoría + Título */}
+                            {/* Encabezado: Categoría + Ubicación + Título */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     {item.category && (
@@ -750,6 +768,28 @@ export default function StoreProduct({ id }: { id: string }) {
                         </div>
                     </div>
                 </div>
+
+                {/* SECCIÓN DEDICADA DE VIDEO DE DEMOSTRACIÓN (Si el producto tiene video) */}
+                {item.storeVideoUrl && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-150 dark:border-slate-800 shadow-xs space-y-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center">
+                                <Play className="w-4 h-4 fill-current ml-0.5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                    Video de Demostración
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-slate-400">
+                                    Mirá el producto en funcionamiento real
+                                </p>
+                            </div>
+                        </div>
+                        <div className="max-w-3xl mx-auto pt-2">
+                            <VideoPlayer url={item.storeVideoUrl} />
+                        </div>
+                    </div>
+                )}
 
                 {/* BENEFICIOS / COMPRA SEGURA */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

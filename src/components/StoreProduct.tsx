@@ -745,14 +745,8 @@ export default function StoreProduct({ id }: { id: string }) {
                                 <span>¿Tenés dudas? Consultanos directo por WhatsApp</span>
                             </button>
 
-                            {/* COMPONENTE FORMATEADO DE DESCRIPCIÓN */}
-                            <FormattedDescription 
-                                description={item.description} 
-                                className="pt-2"
-                            />
-
                             {/* Enlace para compartir */}
-                            <div className="pt-4 border-t border-gray-100 dark:border-slate-800 space-y-2">
+                            <div className="pt-2 border-t border-gray-100 dark:border-slate-800 space-y-2">
                                 <span className="text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Compartir Producto</span>
                                 <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800 px-3 py-2">
                                     <p className="text-xs text-gray-500 dark:text-slate-400 flex-1 truncate select-all">{window.location.href}</p>
@@ -768,6 +762,17 @@ export default function StoreProduct({ id }: { id: string }) {
                         </div>
                     </div>
                 </div>
+
+                {/* SECCIÓN DEDICADA DE DESCRIPCIÓN Y ESPECIFICACIONES (Ancho Completo, Sin Huecos) */}
+                {item.description && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 lg:p-10 border border-gray-150 dark:border-slate-800 shadow-xs">
+                        <FormattedDescription 
+                            description={item.description} 
+                            maxInitialLines={15}
+                        />
+                    </div>
+                )}
+
 
                 {/* SECCIÓN DEDICADA DE VIDEO DE DEMOSTRACIÓN (Si el producto tiene video) */}
                 {item.storeVideoUrl && (

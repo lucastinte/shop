@@ -12,12 +12,14 @@ import {
 
 interface FormattedDescriptionProps {
   description?: string;
+  copyText?: string;
   maxInitialLines?: number;
   className?: string;
 }
 
 export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
   description,
+  copyText,
   maxInitialLines = 10,
   className = '',
 }) => {
@@ -30,8 +32,9 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
   }, [description]);
 
   const handleCopy = () => {
-    if (!description) return;
-    navigator.clipboard.writeText(description).then(() => {
+    const textToCopy = copyText || description;
+    if (!textToCopy) return;
+    navigator.clipboard.writeText(textToCopy).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

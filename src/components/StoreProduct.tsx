@@ -269,7 +269,7 @@ export default function StoreProduct({ id }: { id: string }) {
         text += `=====================================\n`;
         text += `¡Hola! Me gustaría coordinar la compra de este producto de la tienda.`;
 
-        const url = getWhatsAppUrl(text, currentLocation);
+        const url = getWhatsAppUrl(text);
         window.open(url, '_blank');
     };
 
@@ -284,7 +284,7 @@ export default function StoreProduct({ id }: { id: string }) {
         text += `🔗 ${window.location.href}\n\n`;
         text += `¿Me podrías brindar más información? ¡Gracias!`;
 
-        const url = getWhatsAppUrl(text, currentLocation);
+        const url = getWhatsAppUrl(text);
         window.open(url, '_blank');
     };
 
@@ -323,7 +323,7 @@ export default function StoreProduct({ id }: { id: string }) {
         text += `*Total del Pedido:* $${totalPrice.toLocaleString('es-AR')}\n\n`;
         text += `¡Hola! Me interesa coordinar la compra de estos productos de la tienda.`;
         
-        const url = getWhatsAppUrl(text, cart[0]?.location);
+        const url = getWhatsAppUrl(text);
         window.open(url, '_blank');
         clearCart();
         setIsCartOpen(false);
@@ -705,12 +705,7 @@ export default function StoreProduct({ id }: { id: string }) {
 
                             {/* Acciones Principales de Compra (Desktop y Tablets) */}
                             <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                                {!item.publicInStore ? (
-                                    <div className="w-full py-5 px-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl text-center">
-                                        <p className="text-base font-extrabold text-amber-600 dark:text-amber-400">Publicación Pausada</p>
-                                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Esta publicación se encuentra momentáneamente pausada y no está a la venta.</p>
-                                    </div>
-                                ) : currentStock > 0 ? (
+                                {currentStock > 0 ? (
                                     <>
                                         {/* Botón Carrito */}
                                         <button
@@ -773,16 +768,6 @@ export default function StoreProduct({ id }: { id: string }) {
                     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 lg:p-10 border border-gray-150 dark:border-slate-800 shadow-xs">
                         <FormattedDescription 
                             description={item.description} 
-                            copyText={[
-                                `*${item.storeTitle || item.productName}*`,
-                                '',
-                                item.description?.trim(),
-                                '',
-                                `💰 *$${currentPrice.toLocaleString('es-AR')}*`,
-                                ...(currentLocation ? [`📍 *${currentLocation}*`] : []),
-                                '',
-                                `🛒 *Comprar aquí:* ${window.location.href}`
-                            ].filter(x => x !== undefined).join('\n')}
                             maxInitialLines={15}
                         />
                     </div>
@@ -906,11 +891,7 @@ export default function StoreProduct({ id }: { id: string }) {
 
                     {/* Botones de Acción Mobile */}
                     <div className="flex items-center gap-2 flex-1">
-                        {!item.publicInStore ? (
-                            <div className="flex-1 py-2 px-3 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 text-center rounded-xl font-bold text-xs">
-                                Publicación Pausada
-                            </div>
-                        ) : currentStock > 0 ? (
+                        {currentStock > 0 ? (
                             <>
                                 <button
                                     onClick={handleAddToCart}

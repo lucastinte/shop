@@ -42,18 +42,16 @@ export interface StoreEntry {
     variants: Item[];   // todas las variantes (incluye al rep)
 }
 
-/** Agrupa items publicados por storeGroup; sin grupo → entrada individual */
+/** Agrupa items publicados por storeGroup; sin grupo → agrupa por título */
 export function groupPublicItems(items: Item[]): StoreEntry[] {
     const byGroup = new Map<string, Item[]>();
-    const singles: Item[] = [];
     for (const it of items) {
-        const g = (it.storeGroup || '').trim();
-        if (g) {
-            if (!byGroup.has(g)) byGroup.set(g, []);
-            byGroup.get(g)!.push(it);
-        } else {
-            singles.push(it);
+        let g = (it.storeGroup || '').trim();
+        if (!g) {
+            g = `_TITLE_${(it.storeTitle || it.productName || '').trim().toLowerCase()}`;
         }
+        if (!byGroup.has(g)) byGroup.set(g, []);
+        byGroup.get(g)!.push(it);
     }
     const score = (i: Item) => (i.storeTitle ? 4 : 0) + (i.description ? 2 : 0) + (i.storeImages?.length ? 1 : 0) + (i.imageUrl ? 1 : 0);
     const entries: StoreEntry[] = [];
@@ -61,7 +59,6 @@ export function groupPublicItems(items: Item[]): StoreEntry[] {
         const rep = [...variants].sort((a, b) => score(b) - score(a))[0];
         entries.push({ rep, variants });
     }
-    for (const it of singles) entries.push({ rep: it, variants: [it] });
     return entries;
 }
 
@@ -91,7 +88,17 @@ function ProductCard({ entry }: { entry: StoreEntry }) {
     const minPrice = prices.length ? Math.min(...prices) : 0;
     const maxPrice = prices.length ? Math.max(...prices) : 0;
     const totalStock = variants.reduce((acc, v) => acc + v.quantity, 0);
-    const locations = Array.from(new Set(variants.map(v => v.location).filter(Boolean))).join(' · ');
+    const locMap = new Map<string, string>();
+    variants.forEach(v => {
+        const loc = (v.location || '').trim();
+        if (loc) {
+            const key = loc.toLowerCase();
+            if (!locMap.has(key)) {
+                locMap.set(key, loc.charAt(0).toUpperCase() + loc.slice(1));
+            }
+        }
+    });
+    const locations = Array.from(locMap.values()).join(' · ');
     const variantCount = maxByKey.size;
     const descPreview = cleanDescriptionPreview(item.description);
 

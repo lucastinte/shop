@@ -48,7 +48,70 @@ function getYouTubeId(url: string): string | null {
     return match?.[1] ?? null;
 }
 
-function VideoPlayer({ url }: { url: string }) {
+const TIKTOK_URL_RE = /^https?:\/\/(www\.|vm\.|vt\.)?tiktok\.com\//i;
+
+// ID numérico directo desde la URL (www.tiktok.com/@user/video/<id>, /v/<id>, /embed/v2/<id>)
+function getTikTokId(url: string): string | null {
+    return url.match(/tiktok\.com\/(?:@[^/?#]+\/video\/|v\/|embed\/v2\/)(\d{6,})/i)?.[1] ?? null;
+}
+
+// Links cortos (vm./vt.) no traen el ID: se resuelve vía oEmbed, que responde
+// con CORS abierto y el HTML del embed contiene data-video-id="<id>".
+async function resolveTikTokId(url: string): Promise<string | null> {
+    const direct = getTikTokId(url);
+    if (direct) return direct;
+    try {
+        const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+        if (!res.ok) return null;
+        const html = String((await res.json()).html || '');
+        return html.match(/data-video-id="(\d+)"/)?.[1] ?? html.match(/tiktok\.com\/[^"]*?video\/(\d{6,})/)?.[1] ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function TikTokEmbed({ url, fill = false }: { url: string; fill?: boolean }) {
+    const [videoId, setVideoId] = useState<string | null>(() => getTikTokId(url));
+
+    useEffect(() => {
+        let cancelled = false;
+        setVideoId(getTikTokId(url));
+        resolveTikTokId(url).then(id => { if (!cancelled && id) setVideoId(id); });
+        return () => { cancelled = true; };
+    }, [url]);
+
+    if (!videoId) {
+        // Sin ID (link corto caído o red bloqueada): botón que abre TikTok
+        return (
+            <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full aspect-video rounded-2xl bg-black text-white hover:bg-slate-800 transition-colors"
+            >
+                <Play className="w-6 h-6 fill-current" />
+                <span className="text-sm font-bold">Ver video en TikTok</span>
+            </a>
+        );
+    }
+    // Los TikTok son verticales (9:16): en el visor cuadrado de la ficha se
+    // ajusta por altura (`fill`); en la sección de demo, por viewport.
+    const size = fill
+        ? { height: '100%', width: 'auto', maxWidth: '100%' }
+        : { height: 'min(70vh, 620px)', width: 'auto', maxWidth: '100%' };
+    return (
+        <iframe
+            src={`https://www.tiktok.com/embed/v2/${videoId}`}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            title="Video de TikTok"
+            className="rounded-2xl bg-black shadow-md border border-slate-800"
+            style={{ ...size, aspectRatio: '9 / 16' }}
+        />
+    );
+}
+
+function VideoPlayer({ url, fill = false }: { url: string; fill?: boolean }) {
     const ytId = getYouTubeId(url);
     if (ytId) {
         return (
@@ -62,6 +125,9 @@ function VideoPlayer({ url }: { url: string }) {
                 />
             </div>
         );
+    }
+    if (TIKTOK_URL_RE.test(url)) {
+        return <TikTokEmbed url={url} fill={fill} />;
     }
     return (
         <video
@@ -456,7 +522,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                     {/* Si el video está activo en el visor principal */}
                                     {isVideoActive && item.storeVideoUrl ? (
                                         <div className="w-full h-full flex items-center justify-center bg-black">
-                                            <VideoPlayer url={item.storeVideoUrl} />
+                                            <VideoPlayer url={item.storeVideoUrl} fill />
                                         </div>
                                     ) : activeUrl && !mainImgError ? (
                                         <>

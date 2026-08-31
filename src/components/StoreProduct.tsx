@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { itemService } from '../services/itemService';
 import type { Item } from '../types';
 import { useCart } from '../contexts/CartContext';
@@ -70,7 +70,7 @@ async function resolveTikTokId(url: string): Promise<string | null> {
     }
 }
 
-function TikTokEmbed({ url, fill = false }: { url: string; fill?: boolean }) {
+function TikTokEmbed({ url }: { url: string }) {
     const [videoId, setVideoId] = useState<string | null>(() => getTikTokId(url));
 
     useEffect(() => {
@@ -94,24 +94,20 @@ function TikTokEmbed({ url, fill = false }: { url: string; fill?: boolean }) {
             </a>
         );
     }
-    // Los TikTok son verticales (9:16): en el visor cuadrado de la ficha se
-    // ajusta por altura (`fill`); en la sección de demo, por viewport.
-    const size = fill
-        ? { height: '100%', width: 'auto', maxWidth: '100%' }
-        : { height: 'min(70vh, 620px)', width: 'auto', maxWidth: '100%' };
+    // Los TikTok son verticales (9:16): alto por viewport, ancho derivado.
     return (
         <iframe
             src={`https://www.tiktok.com/embed/v2/${videoId}`}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
             title="Video de TikTok"
-            className="rounded-2xl bg-black shadow-md border border-slate-800"
-            style={{ ...size, aspectRatio: '9 / 16' }}
+            className="mx-auto rounded-2xl bg-black shadow-md border border-slate-800"
+            style={{ height: 'min(70vh, 620px)', width: 'auto', maxWidth: '100%', aspectRatio: '9 / 16' }}
         />
     );
 }
 
-function VideoPlayer({ url, fill = false }: { url: string; fill?: boolean }) {
+function VideoPlayer({ url }: { url: string }) {
     const ytId = getYouTubeId(url);
     if (ytId) {
         return (
@@ -127,7 +123,7 @@ function VideoPlayer({ url, fill = false }: { url: string; fill?: boolean }) {
         );
     }
     if (TIKTOK_URL_RE.test(url)) {
-        return <TikTokEmbed url={url} fill={fill} />;
+        return <TikTokEmbed url={url} />;
     }
     return (
         <video
@@ -159,7 +155,7 @@ export default function StoreProduct({ id }: { id: string }) {
     
     // Galería
     const [activeIdx, setActiveIdx] = useState(0);
-    const [isVideoActive, setIsVideoActive] = useState(false);
+    const videoSectionRef = useRef<HTMLDivElement>(null);
     const [mainImgError, setMainImgError] = useState(false);
     const [showLightbox, setShowLightbox] = useState(false);
     
@@ -279,13 +275,11 @@ export default function StoreProduct({ id }: { id: string }) {
     };
 
     const handleNextImage = () => {
-        setIsVideoActive(false);
         setActiveIdx(prev => (prev + 1) % allImages.length);
         setMainImgError(false);
     };
 
     const handlePrevImage = () => {
-        setIsVideoActive(false);
         setActiveIdx(prev => (prev - 1 + allImages.length) % allImages.length);
         setMainImgError(false);
     };
@@ -519,12 +513,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                         )}
                                     </div>
 
-                                    {/* Si el video está activo en el visor principal */}
-                                    {isVideoActive && item.storeVideoUrl ? (
-                                        <div className="w-full h-full flex items-center justify-center bg-black">
-                                            <VideoPlayer url={item.storeVideoUrl} fill />
-                                        </div>
-                                    ) : activeUrl && !mainImgError ? (
+                                    {activeUrl && !mainImgError ? (
                                         <>
                                             <img
                                                 key={activeUrl}
@@ -569,12 +558,12 @@ export default function StoreProduct({ id }: { id: string }) {
                                 </div>
 
                                 {/* Indicadores de Puntos para Mobile */}
-                                {allImages.length > 1 && !isVideoActive && (
+                                {allImages.length > 1 && (
                                     <div className="flex items-center justify-center gap-1.5 md:hidden py-1">
                                         {allImages.map((_, i) => (
                                             <button
                                                 key={i}
-                                                onClick={() => { setIsVideoActive(false); setActiveIdx(i); setMainImgError(false); }}
+                                                onClick={() => { setActiveIdx(i); setMainImgError(false); }}
                                                 className={`h-1.5 rounded-full transition-all ${
                                                     i === activeIdx 
                                                     ? 'w-6 bg-indigo-600 dark:bg-indigo-400' 
@@ -593,10 +582,10 @@ export default function StoreProduct({ id }: { id: string }) {
                                         {allImages.map((url, i) => (
                                             <button
                                                 key={url}
-                                                onClick={() => { setIsVideoActive(false); setActiveIdx(i); setMainImgError(false); }}
+                                                onClick={() => { setActiveIdx(i); setMainImgError(false); }}
                                                 className={`shrink-0 w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer bg-white dark:bg-slate-900 ${
-                                                    !isVideoActive && i === activeIdx 
-                                                    ? 'border-indigo-500 ring-2 ring-indigo-500/20 scale-[1.02] shadow-sm' 
+                                                    i === activeIdx
+                                                    ? 'border-indigo-500 ring-2 ring-indigo-500/20 scale-[1.02] shadow-sm'
                                                     : 'border-gray-200 dark:border-slate-800 opacity-60 hover:opacity-100'
                                                 }`}
                                             >
@@ -604,16 +593,12 @@ export default function StoreProduct({ id }: { id: string }) {
                                             </button>
                                         ))}
 
-                                        {/* Botón de Miniatura para Video */}
+                                        {/* Botón de Miniatura para Video: lleva a la sección de demo abajo */}
                                         {item.storeVideoUrl && (
                                             <button
-                                                onClick={() => setIsVideoActive(true)}
-                                                className={`shrink-0 w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
-                                                    isVideoActive
-                                                    ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 ring-2 ring-red-500/20 scale-[1.02]'
-                                                    : 'border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950/60 text-gray-500 dark:text-slate-400 opacity-70 hover:opacity-100'
-                                                }`}
-                                                title="Ver video del producto"
+                                                onClick={() => videoSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                                                className="shrink-0 w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-1 border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950/60 text-gray-500 dark:text-slate-400 opacity-70 hover:opacity-100 hover:border-red-300 dark:hover:border-red-800"
+                                                title="Ir al video del producto"
                                             >
                                                 <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center">
                                                     <Play className="w-3 h-3 fill-current ml-0.5" />
@@ -842,7 +827,7 @@ export default function StoreProduct({ id }: { id: string }) {
 
                 {/* SECCIÓN DEDICADA DE VIDEO DE DEMOSTRACIÓN (Si el producto tiene video) */}
                 {item.storeVideoUrl && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-150 dark:border-slate-800 shadow-xs space-y-4">
+                    <div ref={videoSectionRef} className="scroll-mt-20 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-150 dark:border-slate-800 shadow-xs space-y-4">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center">
                                 <Play className="w-4 h-4 fill-current ml-0.5" />

@@ -496,7 +496,12 @@ export default function StoreProduct({ id }: { id: string }) {
                             <div className="md:sticky md:top-24 space-y-3.5 self-start">
                                 
                                 {/* Visualizador Principal (Foto o Video) */}
-                                <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-slate-950 border border-gray-200/80 dark:border-slate-800 relative group/viewer shadow-xs">
+                                {/* Contenedor de alto flexible: la foto entra completa (contain),
+                                    sin recorte. Solo una foto muy panorámica llena el ancho. */}
+                                <div
+                                    className="relative flex items-center justify-center rounded-2xl overflow-hidden bg-gray-50 dark:bg-slate-950 border border-gray-200/80 dark:border-slate-800 group/viewer shadow-xs"
+                                    style={{ minHeight: '240px', maxHeight: '70vh' }}
+                                >
                                     {/* Badges Flotantes sobre la Imagen */}
                                     <div className="absolute top-3.5 left-3.5 z-10 flex flex-wrap gap-2 pointer-events-none">
                                         <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm ${conditionColor[currentCondition] || conditionColor.nuevo}`}>
@@ -519,7 +524,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                                 key={activeUrl}
                                                 src={activeUrl}
                                                 alt={item.productName}
-                                                className="w-full h-full object-cover select-none transition-transform duration-500 md:group-hover/viewer:scale-105"
+                                                className="w-full h-auto max-h-[70vh] object-contain select-none"
                                                 onError={() => setMainImgError(true)}
                                             />
                                             
@@ -553,7 +558,9 @@ export default function StoreProduct({ id }: { id: string }) {
                                             </button>
                                         </>
                                     ) : (
-                                        <ImagePlaceholder />
+                                        <div className="w-full aspect-square">
+                                            <ImagePlaceholder />
+                                        </div>
                                     )}
                                 </div>
 

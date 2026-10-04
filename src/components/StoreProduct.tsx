@@ -653,12 +653,14 @@ export default function StoreProduct({ id }: { id: string }) {
                                 </div>
                                 <div className="text-right">
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                                        currentStock > 0 
-                                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' 
+                                        currentStock === 1
+                                        ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                                        : currentStock > 0
+                                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
                                         : 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
                                     }`}>
-                                        <span className={`w-2 h-2 rounded-full ${currentStock > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                                        {currentStock > 0 ? `${currentStock} en stock` : 'Agotado'}
+                                        <span className={`w-2 h-2 rounded-full ${currentStock === 1 ? 'bg-amber-500 animate-pulse' : currentStock > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                        {currentStock === 1 ? '🔥 ¡Última unidad!' : currentStock > 0 ? `${currentStock} en stock` : 'Agotado'}
                                     </span>
                                 </div>
                             </div>
@@ -716,11 +718,13 @@ export default function StoreProduct({ id }: { id: string }) {
                                                             ${v.price.toLocaleString('es-AR')}
                                                         </span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                            v.quantity > 0 
-                                                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' 
+                                                            v.quantity === 1
+                                                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
+                                                            : v.quantity > 0
+                                                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
                                                             : 'bg-rose-50 text-rose-500'
                                                         }`}>
-                                                            {v.quantity > 0 ? `${v.quantity} disp.` : 'Agotado'}
+                                                            {v.quantity === 1 ? 'Última unidad' : v.quantity > 0 ? `${v.quantity} disp.` : 'Agotado'}
                                                         </span>
                                                     </div>
                                                 </button>

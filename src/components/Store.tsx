@@ -129,6 +129,13 @@ function ProductCard({ entry }: { entry: StoreEntry }) {
                         Video
                     </span>
                 )}
+
+                {/* Badge de Última Unidad */}
+                {totalStock === 1 && (
+                    <span className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-10 bg-amber-500/95 backdrop-blur-md text-white text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                        🔥 ¡Última unidad!
+                    </span>
+                )}
                 
                 {firstImage && !imgError ? (
                     <img
@@ -191,7 +198,12 @@ function ProductCard({ entry }: { entry: StoreEntry }) {
                             {minPrice !== maxPrice && <span className="text-[10px] font-bold text-gray-400 mr-1 uppercase">desde</span>}
                             ${minPrice.toLocaleString('es-AR')}
                         </div>
-                        {totalStock > 0 ? (
+                        {totalStock === 1 ? (
+                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                ¡Última unidad!
+                            </p>
+                        ) : totalStock > 0 ? (
                             <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 {totalStock} disp.

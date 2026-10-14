@@ -161,3 +161,49 @@ body {
     animation: none;
   }
 }
+
+/* ── Animaciones de los banners de la portada ───────────────────────────
+   Solo corren si el sistema NO pide "reducir movimiento". */
+.anim-orbita,
+.anim-orbita-inv,
+.anim-rueda,
+.anim-pulso {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-orbita { animation: sl-orbita 16s ease-in-out infinite; }
+  .anim-orbita-inv { animation: sl-orbita-inv 16s ease-in-out infinite; }
+  .anim-pulso { animation: sl-pulso 2.4s ease-in-out infinite; }
+  .anim-senal { animation: sl-senal 1.1s linear infinite; }
+  .anim-ruta { animation: sl-ruta 0.45s linear infinite; }
+  .anim-rueda { animation: sl-rueda 0.7s linear infinite; }
+  .anim-rebote { animation: sl-rebote 0.9s ease-in-out infinite; }
+  .anim-cerros { animation: sl-cerros 12s ease-in-out infinite; }
+  .anim-titila { animation: sl-titila 3.6s ease-in-out infinite; }
+  .anim-luz { animation: sl-luz 1.6s ease-in-out infinite; }
+  .anim-cable { animation: sl-cable 1s linear infinite; }
+}
+
+@keyframes sl-orbita {
+  0%, 100% { transform: rotate(calc(var(--amp, 9deg) * -1)); }
+  50% { transform: rotate(var(--amp, 9deg)); }
+}
+@keyframes sl-orbita-inv {
+  0%, 100% { transform: rotate(var(--amp, 9deg)); }
+  50% { transform: rotate(calc(var(--amp, 9deg) * -1)); }
+}
+@keyframes sl-pulso { 50% { transform: scale(1.18); } }
+@keyframes sl-senal { to { stroke-dashoffset: -30; } }
+@keyframes sl-ruta { to { stroke-dashoffset: -38; } }
+@keyframes sl-rueda { to { transform: rotate(-360deg); } }
+@keyframes sl-rebote {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-1.6px); }
+  60% { transform: translateY(-0.6px); }
+}
+@keyframes sl-cerros { 50% { transform: translateX(14px); } }
+@keyframes sl-titila { 50% { opacity: 0.2; } }
+@keyframes sl-luz { 50% { opacity: 0.5; } }
+@keyframes sl-cable { to { stroke-dashoffset: 16; } }

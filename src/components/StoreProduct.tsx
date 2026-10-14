@@ -411,7 +411,7 @@ export default function StoreProduct({ id }: { id: string }) {
                     {/* GALERÍA */}
                     <div className="md:col-span-7 md:sticky md:top-24 flex flex-col gap-3">
                         <div
-                            className="relative flex items-center justify-center bg-surface border border-line rounded-[2px] overflow-hidden group/viewer"
+                            className={`relative flex items-center justify-center border border-line rounded-[2px] overflow-hidden group/viewer ${activeUrl && !mainImgError ? 'bg-white' : 'bg-surface'}`}
                             style={{ minHeight: '280px', maxHeight: '72vh' }}
                         >
                             <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-2 pointer-events-none">
@@ -429,7 +429,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                         key={activeUrl}
                                         src={activeUrl}
                                         alt={title}
-                                        className="w-full h-auto max-h-[72vh] object-contain select-none"
+                                        className="w-full h-auto max-h-[72vh] object-contain p-4 sm:p-8 select-none"
                                         onError={() => setMainImgError(true)}
                                     />
 
@@ -482,11 +482,11 @@ export default function StoreProduct({ id }: { id: string }) {
                                         onClick={() => { setActiveIdx(i); setMainImgError(false); }}
                                         aria-label={`Ver foto ${i + 1}`}
                                         aria-current={i === activeIdx}
-                                        className={`shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-[2px] overflow-hidden bg-surface cursor-pointer transition ${
+                                        className={`shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-[2px] overflow-hidden bg-white cursor-pointer transition ${
                                             i === activeIdx ? 'border-2 border-ink' : 'border border-line opacity-70 hover:opacity-100'
                                         }`}
                                     >
-                                        <img src={url} alt="" className="w-full h-full object-cover" />
+                                        <img src={url} alt="" className="w-full h-full object-contain p-1" />
                                     </button>
                                 ))}
 
@@ -517,7 +517,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                     </span>
                                 )}
                             </div>
-                            <h1 className="font-display font-black uppercase leading-[0.9] text-[clamp(40px,4.6vw,60px)] break-words">
+                            <h1 className={`font-display font-black uppercase leading-[0.9] break-words ${title.length > 36 ? 'text-[clamp(32px,3.4vw,44px)]' : 'text-[clamp(40px,4.6vw,60px)]'}`}>
                                 {title}
                             </h1>
                         </div>

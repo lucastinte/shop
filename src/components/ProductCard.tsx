@@ -38,6 +38,7 @@ export function entryStock(entry: StoreEntry): number {
 function cleanDescriptionPreview(desc?: string): string {
     if (!desc) return '';
     return desc
+        .replace(/\*\*|__/g, '')        // negritas de markdown
         .replace(/^[-*•✓✔+→▪]\s*/gm, '')
         .replace(/\n+/g, ' ')
         .trim();
@@ -81,7 +82,8 @@ export function ProductCard({ entry }: { entry: StoreEntry }) {
             href={`/producto/${item.id}`}
             className="group relative w-full flex flex-col bg-surface border border-line rounded-[2px] hover:border-ink transition-colors min-w-0"
         >
-            <div className="relative aspect-square overflow-hidden hatch">
+            {/* Fondo blanco: la mayoría de las fotos de producto vienen sobre blanco */}
+            <div className={`relative aspect-square overflow-hidden ${firstImage && !imgError ? 'bg-white' : 'hatch'}`}>
                 <span className={`absolute top-2 left-2 z-10 label-mono px-2 py-1 ${conditionChip[item.condition] || conditionChip.nuevo}`}>
                     {conditionLabel[item.condition] || item.condition}
                 </span>
@@ -112,7 +114,7 @@ export function ProductCard({ entry }: { entry: StoreEntry }) {
                         src={firstImage}
                         alt={title}
                         loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 motion-reduce:transition-none"
+                        className="w-full h-full object-contain p-3 sm:p-5 group-hover:scale-[1.03] transition-transform duration-500 motion-reduce:transition-none"
                         onError={() => setImgError(true)}
                     />
                 ) : (

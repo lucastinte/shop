@@ -113,9 +113,9 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                             <ul className="flex flex-col divide-y divide-line">
                                 {cart.map(item => (
                                     <li key={item.id} className="flex gap-3.5 py-4 first:pt-0">
-                                        <div className="w-20 h-20 shrink-0 border border-line overflow-hidden hatch">
+                                        <div className={`w-20 h-20 shrink-0 border border-line overflow-hidden ${item.imageUrl ? 'bg-white' : 'hatch'}`}>
                                             {item.imageUrl ? (
-                                                <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
+                                                <img src={item.imageUrl} alt="" className="w-full h-full object-contain p-1" />
                                             ) : null}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col gap-1">

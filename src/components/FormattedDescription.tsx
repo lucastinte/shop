@@ -7,6 +7,16 @@ interface FormattedDescriptionProps {
   className?: string;
 }
 
+/** Convierte **negrita** (y __negrita__) de la descripción en <strong> */
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+  return parts.map((part, i) =>
+    /^(\*\*|__).+(\*\*|__)$/.test(part)
+      ? <strong key={i} className="font-semibold text-ink">{part.slice(2, -2)}</strong>
+      : part
+  );
+}
+
 const KEY_VALUE_RE = /^([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s()/-]{2,30}):\s*(.+)$/;
 
 export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
@@ -49,10 +59,10 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
           <span className="text-ink-2 leading-relaxed">
             {kv ? (
               <>
-                <strong className="font-semibold text-ink">{kv[1]}:</strong> {kv[2]}
+                <strong className="font-semibold text-ink">{kv[1]}:</strong> {renderInline(kv[2])}
               </>
             ) : (
-              content
+              renderInline(content)
             )}
           </span>
         </li>
@@ -63,14 +73,14 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
     if (kv && !line.startsWith('http')) {
       return (
         <li key={index} className="text-ink-2 leading-relaxed">
-          <strong className="font-semibold text-ink">{kv[1]}:</strong> {kv[2]}
+          <strong className="font-semibold text-ink">{kv[1]}:</strong> {renderInline(kv[2])}
         </li>
       );
     }
 
     return (
       <li key={index} className="text-ink-2 leading-relaxed">
-        {line}
+        {renderInline(line)}
       </li>
     );
   };

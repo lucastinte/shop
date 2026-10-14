@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { itemService } from '../services/itemService';
 import type { Item } from '../types';
 import { useCart } from '../contexts/CartContext';
-import { getWhatsAppUrl, STORE_CONFIG } from '../config/storeConfig';
+import { getWhatsAppUrl, STORE_CONFIG, SEDES_TEXT } from '../config/storeConfig';
 import FormattedDescription from './FormattedDescription';
 import { ProductCard } from './ProductCard';
 import { SiteFooter, SiteHeader, TopStrip, WhatsAppIcon } from './SiteChrome';
@@ -627,7 +627,8 @@ export default function StoreProduct({ id }: { id: string }) {
 
                         <dl className="bg-night text-on-night font-mono text-[13px] rounded-[2px]">
                             {[
-                                ['Entrega', 'Retiro en el día o envío coordinado'],
+                                ['Retiro', SEDES_TEXT],
+                                ['Envío', 'Coordinado a tu zona'],
                                 ['Compra', 'Trato directo, sin comisiones ocultas'],
                                 ['Atención', 'Respuesta rápida por WhatsApp'],
                             ].map(([k, v], i) => (

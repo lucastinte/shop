@@ -126,7 +126,7 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
         </span>
         <span className="inline-flex items-center gap-2 label-mono text-muted">
           <PackageCheck className="w-4 h-4 text-ink" aria-hidden="true" />
-          Retiro en el día o envío coordinado
+          Retiro en sede o envío coordinado
         </span>
       </div>
     </div>

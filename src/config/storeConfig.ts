@@ -1,7 +1,47 @@
 export const STORE_CONFIG = {
-  storeName: 'Lucas Shop',
+  storeName: 'Starlinkers',
   defaultWhatsApp: '5493885925942', // Código de país 549 + área 388 + 5925942
+  /** Puntos de retiro (se muestran en la franja superior, el pie y la ficha) */
+  sedes: ['San Salvador de Jujuy', 'Abra Pampa'],
 };
+
+/** Texto corto con las sedes: "San Salvador de Jujuy y Abra Pampa" */
+export const SEDES_TEXT = STORE_CONFIG.sedes.join(' y ');
+
+export type HeroArt = 'dish' | 'car';
+
+export interface HeroBanner {
+  id: string;
+  kicker: string;
+  title: string;
+  text: string;
+  cta: string;
+  /** Búsqueda que se aplica al tocar el botón (si no hay resultados, solo baja al catálogo) */
+  query: string;
+  art: HeroArt;
+}
+
+/** Banners rotativos de la portada. Para agregar uno, sumá un objeto acá. */
+export const HERO_BANNERS: HeroBanner[] = [
+  {
+    id: 'mini-x',
+    kicker: 'Starlink',
+    title: 'Starlink Mini X',
+    text: 'Internet satelital compacta para llevar a donde vayas. Precio y stock a la vista.',
+    cta: 'Ver Starlink Mini X',
+    query: 'mini x',
+    art: 'dish',
+  },
+  {
+    id: 'car-pack',
+    kicker: 'Car Pack',
+    title: 'Conexión en el auto',
+    text: 'Tu Starlink en el vehículo, con su adaptador para enchufarla al auto y salir a la ruta conectado.',
+    cta: 'Ver Car Pack',
+    query: 'car pack',
+    art: 'car',
+  },
+];
 
 /**
  * Genera un enlace a WhatsApp limpio.

@@ -633,7 +633,7 @@ export default function StoreProduct({ id }: { id: string }) {
                         <dl className="bg-night text-on-night font-mono text-[13px] rounded-[2px]">
                             {[
                                 ...STORE_CONFIG.sedes.map(sd => [sd.nombre, sd.direccion ? `${sd.direccion} · ${sd.horario}` : sd.horario]),
-                                ['Envío', 'Coordinado a tu zona'],
+                                ['Envío', enJujuy ? 'Mandás tu cadete o Uber; no hacemos envíos' : 'Coordinado a tu zona'],
                                 ['Compra', 'Trato directo, sin comisiones ocultas'],
                                 ['Atención', 'Respuesta rápida por WhatsApp'],
                             ].map(([k, v], i) => (

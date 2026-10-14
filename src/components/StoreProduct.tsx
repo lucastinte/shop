@@ -7,6 +7,7 @@ import FormattedDescription from './FormattedDescription';
 import { ProductCard } from './ProductCard';
 import { SiteFooter, SiteHeader, TopStrip, WhatsAppIcon } from './SiteChrome';
 import CartDrawer, { QtyStepper } from './CartDrawer';
+import EntregaJujuy, { ENTREGA_INICIAL, entregaMensaje, esDeSedeJujuy, type Entrega } from './EntregaJujuy';
 import { conditionLabel, formatPrice, priceOf, capitalize } from '../lib/format';
 import {
     X,
@@ -147,6 +148,7 @@ export default function StoreProduct({ id }: { id: string }) {
     // Variantes y Cantidades
     const [selectedVariantId, setSelectedVariantId] = useState<string>('');
     const [buyQty, setBuyQty] = useState(1);
+    const [entrega, setEntrega] = useState<Entrega>(ENTREGA_INICIAL);
 
     const [copied, setCopied] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -226,6 +228,7 @@ export default function StoreProduct({ id }: { id: string }) {
     const currentStock = activeSelectedVariant ? activeSelectedVariant.quantity : (item?.quantity ?? 0);
     const currentLocation = activeSelectedVariant ? activeSelectedVariant.location : (item?.location ?? '');
     const currentCondition = activeSelectedVariant ? activeSelectedVariant.condition : (item?.condition ?? 'nuevo');
+    const enJujuy = esDeSedeJujuy(currentLocation);
 
     useEffect(() => {
         setBuyQty(1);
@@ -313,6 +316,7 @@ export default function StoreProduct({ id }: { id: string }) {
         text += `   Total: $${(buyQty * currentPrice).toLocaleString('es-AR')}\n\n`;
         text += `🔗 Enlace: ${window.location.href}\n`;
         text += `=====================================\n`;
+        if (enJujuy) text += `${entregaMensaje(entrega)}=====================================\n`;
         text += `¡Hola! Me gustaría coordinar la compra de este producto de la tienda.`;
 
         window.open(getWhatsAppUrl(text), '_blank');
@@ -592,6 +596,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                     <QtyStepper value={buyQty} max={currentStock} onChange={setBuyQty} />
                                     <span className="text-sm text-muted">{currentStock} unidad{currentStock !== 1 ? 'es' : ''} disponible{currentStock !== 1 ? 's' : ''}</span>
                                 </div>
+                                {enJujuy && <EntregaJujuy idPrefix="ficha-entrega" value={entrega} onChange={setEntrega} />}
                                 <button
                                     type="button"
                                     onClick={handleAddToCart}
@@ -627,7 +632,7 @@ export default function StoreProduct({ id }: { id: string }) {
 
                         <dl className="bg-night text-on-night font-mono text-[13px] rounded-[2px]">
                             {[
-                                ...STORE_CONFIG.sedes.map(sd => [sd.nombre, sd.horario]),
+                                ...STORE_CONFIG.sedes.map(sd => [sd.nombre, sd.direccion ? `${sd.direccion} · ${sd.horario}` : sd.horario]),
                                 ['Envío', 'Coordinado a tu zona'],
                                 ['Compra', 'Trato directo, sin comisiones ocultas'],
                                 ['Atención', 'Respuesta rápida por WhatsApp'],

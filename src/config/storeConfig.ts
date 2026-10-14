@@ -3,7 +3,7 @@ export const STORE_CONFIG = {
   defaultWhatsApp: '5493885925942', // Código de país 549 + área 388 + 5925942
   /** Puntos de retiro y horario de atención (franja superior, portada, pie y ficha) */
   sedes: [
-    { nombre: 'San Salvador de Jujuy', horario: '10 a 12 hs y 19 a 22 hs' },
+    { nombre: 'San Salvador de Jujuy', horario: '10 a 12 hs y 19 a 22 hs', direccion: 'Calle 7 de Agosto 350' },
     { nombre: 'Abra Pampa', horario: 'Por la tarde' },
   ] as Sede[],
 };
@@ -11,7 +11,27 @@ export const STORE_CONFIG = {
 export interface Sede {
   nombre: string;
   horario: string;
+  direccion?: string;
 }
+
+/**
+ * EXPERIMENTAL — Entrega en San Salvador de Jujuy.
+ * Para productos de esa sede, el cliente elige retirar en el local o mandar
+ * un Uber/moto (lo pide él dentro de la franja, o te pasa la cotización).
+ * Poné `activo: false` para apagarlo.
+ */
+export const RETIRO_JUJUY = {
+  activo: true,
+  sede: 'San Salvador de Jujuy',
+  direccion: 'Calle 7 de Agosto 350',
+  ciudad: 'San Salvador de Jujuy',
+  franjas: ['10 a 12 hs', '19 a 22 hs'],
+  // Coordenadas del local, para que Uber abra con el punto de retiro cargado.
+  // En Google Maps: mantené apretado el local y copiá los números (ej. -24.18, -65.30).
+  // Mientras estén en null, el botón abre Uber y el cliente pega la dirección.
+  lat: null as number | null,
+  lng: null as number | null,
+};
 
 /** Texto corto con las sedes: "San Salvador de Jujuy y Abra Pampa" */
 export const SEDES_TEXT = STORE_CONFIG.sedes.map(s => s.nombre).join(' y ');

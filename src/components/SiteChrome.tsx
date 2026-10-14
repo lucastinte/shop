@@ -145,7 +145,7 @@ export function SedesList({ tone = 'night' }: { tone?: 'night' | 'light' }) {
             {STORE_CONFIG.sedes.map(s => (
                 <div key={s.nombre} className="flex flex-wrap items-baseline gap-x-3">
                     <dt className={`label-mono ${nameCls}`}>{s.nombre}</dt>
-                    <dd className={`m-0 font-mono text-xs ${hourCls}`}>{s.horario}</dd>
+                    <dd className={`m-0 font-mono text-xs ${hourCls}`}>{s.direccion ? `${s.direccion} · ` : ''}{s.horario}</dd>
                 </div>
             ))}
         </dl>

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { groupSameProduct } from '../lib/grouping';
 import type { Item, ItemCondition, ItemStatus, ItemType, WithdrawalReason } from '../types';
 
 // Helper to map DB columns (snake_case) to application model (camelCase)
@@ -54,16 +55,29 @@ export const itemService = {
         return mapFromDb(data);
     },
 
+    /**
+     * Productos en stock para la tienda. Igual que el dashboard, un producto
+     * cuenta como publicado si CUALQUIERA de sus registros lo está: así una
+     * tanda nueva cargada en otra sede (que puede quedar sin el tilde de
+     * publicar) igual aparece como otra sede del mismo producto.
+     */
     async getPublicItems(): Promise<Item[]> {
         const { data, error } = await supabase
             .from('items')
             .select('*')
             .eq('status', 'in_stock')
-            .eq('public_in_store', true)
             .order('date', { ascending: false });
 
         if (error) throw error;
-        return (data || []).map(mapFromDb);
+        const all = (data || [])
+            .map(mapFromDb)
+            // los "propios" solo si se publicaron explícitamente
+            .filter(i => i.itemType !== 'personal' || i.publicInStore);
+        const included = new Set<string>();
+        for (const g of groupSameProduct(all)) {
+            if (g.some(i => i.publicInStore)) g.forEach(i => included.add(i.id));
+        }
+        return all.filter(i => included.has(i.id));
     },
 
     async getPublicItemsByGroup(group: string): Promise<Item[]> {

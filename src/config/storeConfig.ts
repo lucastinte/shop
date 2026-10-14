@@ -4,7 +4,7 @@ export const STORE_CONFIG = {
   /** Puntos de retiro y horario de atención (franja superior, portada, pie y ficha) */
   sedes: [
     { nombre: 'San Salvador de Jujuy', horario: '10 a 12 hs y 19 a 22 hs', direccion: 'Calle 7 de Agosto 350' },
-    { nombre: 'Abra Pampa', horario: 'Por la tarde' },
+    { nombre: 'Abra Pampa', horario: 'Por la tarde', direccion: 'Lavalle 253, Barrio 23 de Agosto' },
   ] as Sede[],
 };
 
@@ -28,6 +28,18 @@ export const RETIRO_JUJUY = {
   ciudad: 'San Salvador de Jujuy',
   franjas: ['10 a 12 hs', '19 a 22 hs'],
 };
+
+/** Normaliza un texto para comparar ubicaciones (sin tildes ni mayúsculas) */
+export function normKey(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+/** Sede que corresponde a la ubicación cargada en el producto (si coincide) */
+export function sedeDe(location?: string): Sede | undefined {
+  if (!location) return undefined;
+  const loc = normKey(location);
+  return STORE_CONFIG.sedes.find(s => loc.includes(normKey(s.nombre)) || normKey(s.nombre).includes(loc));
+}
 
 /** Texto corto con las sedes: "San Salvador de Jujuy y Abra Pampa" */
 export const SEDES_TEXT = STORE_CONFIG.sedes.map(s => s.nombre).join(' y ');

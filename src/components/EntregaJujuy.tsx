@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Bike, Check, Copy, MapPin, Store } from 'lucide-react';
-import { RETIRO_JUJUY } from '../config/storeConfig';
+import { RETIRO_JUJUY, normKey, type Sede } from '../config/storeConfig';
 
 /* ─────────────────────────────────────────────────────────────
    EXPERIMENTAL: entrega para productos de San Salvador de Jujuy.
@@ -24,9 +24,7 @@ export const ENTREGA_INICIAL: Entrega = {
 
 const direccionCompleta = `${RETIRO_JUJUY.direccion}, ${RETIRO_JUJUY.ciudad}`;
 
-function normalizar(s: string): string {
-    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-}
+const normalizar = normKey;
 
 /** ¿El producto está en la sede de San Salvador de Jujuy? */
 export function esDeSedeJujuy(location?: string): boolean {
@@ -176,5 +174,48 @@ function Pill({ checked, onClick, children }: { checked: boolean; onClick: () =>
         >
             {children}
         </button>
+    );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Retiro simple en una sede sin opciones (ej. Abra Pampa):
+   solo dirección y horario de atención.
+   ───────────────────────────────────────────────────────────── */
+
+export function retiroSedeMensaje(sede: Sede, alcance?: string): string {
+    const para = alcance ? ` (${alcance})` : '';
+    const dir = sede.direccion ? `${sede.direccion}, ${sede.nombre}` : sede.nombre;
+    return `🏪 *Retiro${para}:* ${dir}\n   Horario: ${sede.horario}\n`;
+}
+
+export function RetiroSede({ sede, alcance }: { sede: Sede; alcance?: string }) {
+    const [copiado, setCopiado] = useState(false);
+    const dir = sede.direccion ? `${sede.direccion}, ${sede.nombre}` : sede.nombre;
+    const copiar = () => {
+        navigator.clipboard?.writeText(dir).then(() => {
+            setCopiado(true);
+            setTimeout(() => setCopiado(false), 2000);
+        });
+    };
+    return (
+        <div className="p-4 bg-surface border border-line rounded-[2px] flex flex-col gap-3 min-w-0">
+            <span className="label-mono text-muted">Retiro en {sede.nombre}{alcance ? ` · ${alcance}` : ''}</span>
+            <div className="flex items-center gap-2 min-h-11 py-1 pl-3 pr-1 bg-bg border border-line rounded-[2px] min-w-0">
+                <MapPin className="w-4 h-4 shrink-0 text-muted" aria-hidden="true" />
+                <span className="font-mono text-xs text-ink flex-1 break-words">{dir}</span>
+                <button
+                    type="button"
+                    onClick={copiar}
+                    className="w-9 h-9 shrink-0 inline-flex items-center justify-center text-ink cursor-pointer"
+                    aria-label={copiado ? 'Dirección copiada' : 'Copiar dirección'}
+                >
+                    {copiado ? <Check className="w-4 h-4 text-signal-ink" /> : <Copy className="w-4 h-4" />}
+                </button>
+            </div>
+            <p className="m-0 text-sm text-ink-2 flex items-start gap-2">
+                <Store className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>Pasás a retirarlo · Horario de atención: <strong className="font-semibold text-ink">{sede.horario}</strong></span>
+            </p>
+        </div>
     );
 }

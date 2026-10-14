@@ -30,7 +30,7 @@ export function TopStrip() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-x-6 gap-y-1">
                 <span className="flex items-center gap-2 whitespace-nowrap">
                     <span className="w-2 h-2 rounded-full bg-signal" aria-hidden="true" />
-                    {STORE_CONFIG.sedes.join(' · ')}
+                    {STORE_CONFIG.sedes.map(s => s.nombre).join(' · ')}
                 </span>
                 <span className="hidden md:inline whitespace-nowrap">Retiro en ambas sedes o envío coordinado</span>
                 <span className="ml-auto whitespace-nowrap hidden sm:inline">Precios y stock al día</span>
@@ -117,7 +117,7 @@ export function SiteFooter() {
                             {STORE_CONFIG.storeName}
                         </span>
                     </span>
-                    <span className="label-mono">Sedes: {STORE_CONFIG.sedes.join(' · ')}</span>
+                    <SedesList tone="night" />
                     <a
                         href={getWhatsAppUrl('¡Hola! Tengo una consulta sobre los productos de la tienda.')}
                         target="_blank"
@@ -133,5 +133,21 @@ export function SiteFooter() {
                 </p>
             </div>
         </footer>
+    );
+}
+
+/** Sedes con su horario de atención */
+export function SedesList({ tone = 'night' }: { tone?: 'night' | 'light' }) {
+    const nameCls = tone === 'night' ? 'text-on-night' : 'text-ink';
+    const hourCls = tone === 'night' ? 'text-night-muted' : 'text-muted';
+    return (
+        <dl className="m-0 flex flex-col gap-1.5">
+            {STORE_CONFIG.sedes.map(s => (
+                <div key={s.nombre} className="flex flex-wrap items-baseline gap-x-3">
+                    <dt className={`label-mono ${nameCls}`}>{s.nombre}</dt>
+                    <dd className={`m-0 font-mono text-xs ${hourCls}`}>{s.horario}</dd>
+                </div>
+            ))}
+        </dl>
     );
 }

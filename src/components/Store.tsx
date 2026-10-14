@@ -3,7 +3,7 @@ import { itemService } from '../services/itemService';
 import type { Item } from '../types';
 import { RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
 import { ProductCard, groupPublicItems, entryStock } from './ProductCard';
-import { SiteFooter, SiteHeader, TopStrip, WhatsAppIcon } from './SiteChrome';
+import { SedesList, SiteFooter, SiteHeader, TopStrip, WhatsAppIcon } from './SiteChrome';
 import CartDrawer from './CartDrawer';
 import { iconForCategory } from '../lib/categoryIcon';
 import { capitalize, conditionLabel, formatPrice, priceOf } from '../lib/format';
@@ -202,7 +202,7 @@ export default function Store() {
                             <span className="label-mono text-night-muted">Entrega</span>
                             <span className="flex flex-col gap-2">
                                 <span className="font-display font-black uppercase text-[38px] leading-[0.9]">Dos puntos de retiro</span>
-                                <span className="text-sm text-night-muted">{SEDES_TEXT}.</span>
+                                <SedesList tone="night" />
                                 <span className="text-sm text-night-muted inline-flex items-center gap-2">
                                     <WhatsAppIcon className="w-4 h-4 shrink-0" />
                                     O envío coordinado: consultá tu zona

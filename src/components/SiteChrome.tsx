@@ -32,7 +32,8 @@ export function TopStrip() {
                     <span className="w-2 h-2 rounded-full bg-signal" aria-hidden="true" />
                     {STORE_CONFIG.sedes.map(s => s.nombre).join(' · ')}
                 </span>
-                <span className="hidden md:inline whitespace-nowrap">Retiro en ambas sedes o envío coordinado</span>
+                {/* Desde lg: en tablet los tres textos sin corte no entran y la página se desplazaba de costado */}
+                <span className="hidden lg:inline whitespace-nowrap">Retiro en ambas sedes o envío coordinado</span>
                 <span className="ml-auto whitespace-nowrap hidden sm:inline">Precios y stock al día</span>
             </div>
         </div>

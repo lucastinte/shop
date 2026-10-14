@@ -1,8 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HERO_BANNERS, type HeroArt, type HeroBanner } from '../config/storeConfig';
 
 const ROTATE_MS = 7000;
+const SWIPE_PX = 40;
+const NARROW_QUERY = '(max-width: 639px)';
+
+/** true en celulares (debajo del breakpoint sm de Tailwind) */
+function useIsNarrow() {
+    const [narrow, setNarrow] = useState(
+        () => typeof window !== 'undefined' && !!window.matchMedia?.(NARROW_QUERY).matches
+    );
+    useEffect(() => {
+        const mq = window.matchMedia?.(NARROW_QUERY);
+        if (!mq) return;
+        const update = () => setNarrow(mq.matches);
+        update();
+        mq.addEventListener('change', update);
+        return () => mq.removeEventListener('change', update);
+    }, []);
+    return narrow;
+}
 
 interface HeroBannersProps {
     onCta: (banner: HeroBanner) => void;
@@ -15,6 +33,8 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
     const banners = HERO_BANNERS;
     const [index, setIndex] = useState(0);
     const [paused, setPaused] = useState(false);
+    const narrow = useIsNarrow();
+    const touchX = useRef<number | null>(null);
     const reduceMotion = useRef(
         typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     );
@@ -27,6 +47,15 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
 
     const go = (i: number) => setIndex((i + banners.length) % banners.length);
 
+    // En el celular se cambia de banner deslizando (las flechas se ocultan)
+    const onTouchStart = (e: TouchEvent) => { touchX.current = e.touches[0].clientX; };
+    const onTouchEnd = (e: TouchEvent) => {
+        if (touchX.current === null || banners.length < 2) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        touchX.current = null;
+        if (Math.abs(dx) >= SWIPE_PX) go(index + (dx < 0 ? 1 : -1));
+    };
+
     return (
         <div
             className="relative flex-[2_1_560px] min-w-0 bg-sky text-on-sky rounded-[2px] overflow-hidden"
@@ -37,6 +66,8 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
             onMouseLeave={() => setPaused(false)}
             onFocus={() => setPaused(true)}
             onBlur={() => setPaused(false)}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
         >
             {/* Todos los banners en la misma celda: el alto es el del más alto */}
             <div className="grid">
@@ -54,16 +85,16 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
                             aria-hidden={!active}
                             inert={!active}
                         >
-                            {/* Móvil y tablet: el dibujo va abajo. Escritorio ancho: detrás, a la derecha */}
-                            <div className="absolute inset-x-0 bottom-0 h-48 xl:inset-0 xl:h-full pointer-events-none">
-                                <BannerArt art={b.art} animate={!reduceMotion.current} />
+                            {/* Celular y tablet: el dibujo va abajo. Escritorio ancho: detrás, a la derecha */}
+                            <div className="absolute inset-x-0 bottom-0 h-40 sm:h-48 xl:inset-0 xl:h-full pointer-events-none">
+                                <BannerArt art={b.art} animate={!reduceMotion.current} narrow={narrow} />
                             </div>
-                            <div className="relative p-6 pb-56 sm:p-10 sm:pb-60 xl:pb-10 flex flex-col gap-4 max-w-[30rem]">
+                            <div className="relative p-6 pb-44 sm:p-10 sm:pb-60 xl:pb-10 flex flex-col gap-3 sm:gap-4 max-w-[30rem]">
                                 <span className="label-mono">{b.kicker}</span>
                                 {i === 0 ? (
-                                    <h1 className="font-display font-black uppercase leading-[0.86] text-[clamp(52px,8vw,88px)]">{b.title}</h1>
+                                    <h1 className="font-display font-black uppercase leading-[0.86] text-[clamp(38px,10.5vw,52px)] sm:text-[clamp(52px,8vw,88px)]">{b.title}</h1>
                                 ) : (
-                                    <h2 className="font-display font-black uppercase leading-[0.86] text-[clamp(52px,8vw,88px)]">{b.title}</h2>
+                                    <h2 className="font-display font-black uppercase leading-[0.86] text-[clamp(38px,10.5vw,52px)] sm:text-[clamp(52px,8vw,88px)]">{b.title}</h2>
                                 )}
                                 <p className="text-base sm:text-lg max-w-[34ch]">{b.text}</p>
                                 <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -84,11 +115,13 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
             </div>
 
             {banners.length > 1 && (
-                <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-1">
+                // Celular: solo los puntos, a la altura de la etiqueta (no tapan el título;
+                // se cambia deslizando). Desde sm: flechas + puntos.
+                <div className="absolute top-3 right-3 sm:top-6 sm:right-6 flex items-center gap-1">
                     <button
                         type="button"
                         onClick={() => go(index - 1)}
-                        className="w-10 h-10 inline-flex items-center justify-center rounded-[2px] border border-on-sky/40 text-on-sky hover:bg-on-sky/10 cursor-pointer"
+                        className="hidden sm:inline-flex w-10 h-10 items-center justify-center rounded-[2px] border border-on-sky/40 text-on-sky hover:bg-on-sky/10 cursor-pointer"
                         aria-label="Banner anterior"
                     >
                         <ChevronLeft className="w-5 h-5" />
@@ -98,7 +131,7 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
                             key={b.id}
                             type="button"
                             onClick={() => go(i)}
-                            className="w-8 h-10 inline-flex items-center justify-center cursor-pointer"
+                            className="w-8 h-8 sm:h-10 inline-flex items-center justify-center cursor-pointer"
                             aria-label={`Ver banner ${i + 1}: ${b.title}`}
                             aria-current={i === index}
                         >
@@ -111,7 +144,7 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
                     <button
                         type="button"
                         onClick={() => go(index + 1)}
-                        className="w-10 h-10 inline-flex items-center justify-center rounded-[2px] border border-on-sky/40 text-on-sky hover:bg-on-sky/10 cursor-pointer"
+                        className="hidden sm:inline-flex w-10 h-10 items-center justify-center rounded-[2px] border border-on-sky/40 text-on-sky hover:bg-on-sky/10 cursor-pointer"
                         aria-label="Banner siguiente"
                     >
                         <ChevronRight className="w-5 h-5" />
@@ -129,11 +162,14 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
  */
 const SPLINE = '0.45 0 0.55 1';
 
-function BannerArt({ art, animate }: { art: HeroArt; animate: boolean }) {
+function BannerArt({ art, animate, narrow }: { art: HeroArt; animate: boolean; narrow: boolean }) {
+    // Las escenas ocupan la mitad derecha del lienzo (x 340-760, y 50-340).
+    // En el celular el dibujo va solo debajo del texto: se recorta a esa zona y se
+    // centra, para que no quede chico en la esquina con media franja vacía.
     return (
         <svg
-            viewBox="0 0 760 340"
-            preserveAspectRatio="xMaxYMax meet"
+            viewBox={narrow ? '340 50 420 290' : '0 0 760 340'}
+            preserveAspectRatio={narrow ? 'xMidYMax meet' : 'xMaxYMax meet'}
             className="absolute inset-0 w-full h-full"
             aria-hidden="true"
         >

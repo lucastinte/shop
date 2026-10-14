@@ -182,14 +182,16 @@ export default function Store() {
                         badge={!loading && !error && inStockCount > 0 ? `${inStockCount} producto${inStockCount !== 1 ? 's' : ''} en stock` : undefined}
                     />
 
-                    <div className="flex-[1_1_300px] min-w-0 flex flex-col gap-4">
+                    {/* flex-[1_0_auto]: las tarjetas pueden crecer pero nunca achicarse
+                        por debajo de su contenido (con flex-1 el texto se salía en el celular) */}
+                    <div className="flex-[1_1_300px] min-w-0 flex flex-col gap-3 sm:gap-4">
                         <a
                             href="#como-comprar"
-                            className="flex-1 min-h-[160px] flex flex-col justify-between gap-4 p-6 bg-signal text-on-signal rounded-[2px] hover:brightness-95 transition"
+                            className="flex-[1_0_auto] sm:min-h-[160px] flex flex-col justify-between gap-3 sm:gap-4 p-5 sm:p-6 bg-signal text-on-signal rounded-[2px] hover:brightness-95 transition"
                         >
                             <span className="label-mono">Compra directa</span>
                             <span className="flex flex-col gap-2">
-                                <span className="font-display font-black uppercase text-[38px] leading-[0.9]">Armá tu pedido</span>
+                                <span className="font-display font-black uppercase text-[30px] sm:text-[38px] leading-[0.9]">Armá tu pedido</span>
                                 <span className="text-sm font-medium">Elegí, sumá al carrito y mandalo por WhatsApp. Sin registrarte.</span>
                             </span>
                         </a>
@@ -197,11 +199,11 @@ export default function Store() {
                             href={getWhatsAppUrl('¡Hola! Quería consultar por retiro o envío a mi zona.')}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 min-h-[160px] flex flex-col justify-between gap-4 p-6 bg-night text-on-night rounded-[2px] dark:border dark:border-line hover:bg-ink-2 dark:hover:bg-sunken transition-colors"
+                            className="flex-[1_0_auto] sm:min-h-[160px] flex flex-col justify-between gap-3 sm:gap-4 p-5 sm:p-6 bg-night text-on-night rounded-[2px] dark:border dark:border-line hover:bg-ink-2 dark:hover:bg-sunken transition-colors"
                         >
                             <span className="label-mono text-night-muted">Entrega</span>
                             <span className="flex flex-col gap-2">
-                                <span className="font-display font-black uppercase text-[38px] leading-[0.9]">Dos puntos de retiro</span>
+                                <span className="font-display font-black uppercase text-[30px] sm:text-[38px] leading-[0.9]">Dos puntos de retiro</span>
                                 <SedesList tone="night" />
                                 <span className="text-sm text-night-muted inline-flex items-center gap-2">
                                     <WhatsAppIcon className="w-4 h-4 shrink-0" />
@@ -213,8 +215,10 @@ export default function Store() {
                 </section>
             )}
 
+            {/* En el celular se oculta: las mismas categorías están en la barra
+                deslizable del encabezado y la grilla empujaba el catálogo una pantalla */}
             {browsing && categories.length > 1 && (
-                <section aria-labelledby="cats-title" className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 flex flex-col gap-4">
+                <section aria-labelledby="cats-title" className="hidden sm:flex max-w-7xl mx-auto px-4 sm:px-6 pt-12 flex-col gap-4">
                     <h2 id="cats-title" className="font-display font-black uppercase text-4xl leading-none">Categorías</h2>
                     <ul className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
                         {categories.map(c => {

@@ -1,12 +1,20 @@
 export const STORE_CONFIG = {
   storeName: 'Starlinkers',
   defaultWhatsApp: '5493885925942', // Código de país 549 + área 388 + 5925942
-  /** Puntos de retiro (se muestran en la franja superior, el pie y la ficha) */
-  sedes: ['San Salvador de Jujuy', 'Abra Pampa'],
+  /** Puntos de retiro y horario de atención (franja superior, portada, pie y ficha) */
+  sedes: [
+    { nombre: 'San Salvador de Jujuy', horario: '10 a 12 hs y 19 a 22 hs' },
+    { nombre: 'Abra Pampa', horario: 'Por la tarde' },
+  ] as Sede[],
 };
 
+export interface Sede {
+  nombre: string;
+  horario: string;
+}
+
 /** Texto corto con las sedes: "San Salvador de Jujuy y Abra Pampa" */
-export const SEDES_TEXT = STORE_CONFIG.sedes.join(' y ');
+export const SEDES_TEXT = STORE_CONFIG.sedes.map(s => s.nombre).join(' y ');
 
 export type HeroArt = 'dish' | 'car';
 

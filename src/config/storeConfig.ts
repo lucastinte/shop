@@ -15,9 +15,10 @@ export interface Sede {
 }
 
 /**
- * EXPERIMENTAL — Entrega en San Salvador de Jujuy.
- * Para productos de esa sede, el cliente elige retirar en el local o mandar
- * un Uber/moto (lo pide él dentro de la franja, o te pasa la cotización).
+ * EXPERIMENTAL — Retiro en San Salvador de Jujuy.
+ * Para productos de esa sede, el cliente elige pasar a retirar o mandar su
+ * propio cadete/Uber (nosotros no hacemos el envío): ve la dirección, elige la
+ * franja y avisa por WhatsApp cuando el cadete está en camino.
  * Poné `activo: false` para apagarlo.
  */
 export const RETIRO_JUJUY = {
@@ -26,11 +27,6 @@ export const RETIRO_JUJUY = {
   direccion: 'Calle 7 de Agosto 350',
   ciudad: 'San Salvador de Jujuy',
   franjas: ['10 a 12 hs', '19 a 22 hs'],
-  // Coordenadas del local, para que Uber abra con el punto de retiro cargado.
-  // En Google Maps: mantené apretado el local y copiá los números (ej. -24.18, -65.30).
-  // Mientras estén en null, el botón abre Uber y el cliente pega la dirección.
-  lat: null as number | null,
-  lng: null as number | null,
 };
 
 /** Texto corto con las sedes: "San Salvador de Jujuy y Abra Pampa" */

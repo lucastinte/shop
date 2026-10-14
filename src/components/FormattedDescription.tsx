@@ -1,20 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  CheckCircle2, 
-  ChevronDown, 
-  ChevronUp, 
-  Copy, 
-  Check, 
-  FileText,
-  ShieldCheck,
-  PackageCheck
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Check, ShieldCheck, PackageCheck } from 'lucide-react';
 
 interface FormattedDescriptionProps {
   description?: string;
   maxInitialLines?: number;
   className?: string;
 }
+
+const KEY_VALUE_RE = /^([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s()/-]{2,30}):\s*(.+)$/;
 
 export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
   description,
@@ -38,144 +31,103 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
   };
 
   if (!description || !description.trim()) {
-    return (
-      <div className="p-4 rounded-2xl bg-gray-50/50 dark:bg-slate-950/30 border border-gray-150 dark:border-slate-800/60 text-gray-400 dark:text-slate-500 text-xs italic">
-        Sin descripción adicional para este producto.
-      </div>
-    );
+    return <p className="text-sm text-muted italic">Sin descripción adicional para este producto.</p>;
   }
 
   const isLong = lines.length > maxInitialLines;
   const visibleLines = isLong && !isExpanded ? lines.slice(0, maxInitialLines) : lines;
 
-  // Render line naturally: detects bullet prefixes and key-value bolding inline
+  // Detecta viñetas y pares "Clave: valor" para darles formato
   const renderLine = (line: string, index: number) => {
-    // Bullet detection (e.g. - item, • item, * item, ✓ item)
     const bulletMatch = line.match(/^[-*•✓✔+→▪]\s*(.+)$/);
     if (bulletMatch) {
       const content = bulletMatch[1].trim();
-      const colonMatch = content.match(/^([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s()/-]{2,30}):\s*(.+)$/);
-
+      const kv = content.match(KEY_VALUE_RE);
       return (
-        <div key={index} className="flex items-start gap-2.5 pl-1 py-0.5">
-          <div className="w-4 h-4 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-1">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          </div>
-          <span className="text-gray-700 dark:text-slate-200 text-sm leading-relaxed text-left">
-            {colonMatch ? (
+        <li key={index} className="flex items-start gap-3">
+          <span className="mt-[0.55em] w-1.5 h-1.5 shrink-0 bg-signal" aria-hidden="true" />
+          <span className="text-ink-2 leading-relaxed">
+            {kv ? (
               <>
-                <strong className="font-bold text-gray-900 dark:text-white">
-                  {colonMatch[1]}:
-                </strong>{' '}
-                {colonMatch[2]}
+                <strong className="font-semibold text-ink">{kv[1]}:</strong> {kv[2]}
               </>
             ) : (
               content
             )}
           </span>
-        </div>
+        </li>
       );
     }
 
-    // Line with "Título:" bolding
-    const colonMatch = line.match(/^([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s()/-]{2,30}):\s*(.+)$/);
-    if (colonMatch && !line.startsWith('http')) {
+    const kv = line.match(KEY_VALUE_RE);
+    if (kv && !line.startsWith('http')) {
       return (
-        <p key={index} className="text-gray-700 dark:text-slate-300 text-sm leading-relaxed text-left">
-          <strong className="font-bold text-gray-900 dark:text-white">
-            {colonMatch[1]}:
-          </strong>{' '}
-          {colonMatch[2]}
-        </p>
+        <li key={index} className="text-ink-2 leading-relaxed">
+          <strong className="font-semibold text-ink">{kv[1]}:</strong> {kv[2]}
+        </li>
       );
     }
 
-    // Normal paragraph text
     return (
-      <p key={index} className="text-gray-700 dark:text-slate-300 text-sm leading-relaxed text-left">
+      <li key={index} className="text-ink-2 leading-relaxed">
         {line}
-      </p>
+      </li>
     );
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Encabezado con Título y Botón Copiar */}
-      <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <h3 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
-            Descripción y Detalles
-          </h3>
-        </div>
-        
+    <div className={`flex flex-col gap-5 ${className}`}>
+      <div className="flex items-center justify-between gap-4 pb-3 border-b border-line">
+        <h2 className="font-display font-black uppercase text-3xl leading-none">Descripción</h2>
         <button
           onClick={handleCopy}
           type="button"
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors px-2.5 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
-          title="Copiar texto de la descripción"
+          className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-[2px] border border-line hover:border-ink text-sm font-medium text-ink transition-colors cursor-pointer"
         >
-          {copied ? (
-            <>
-              <Check className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copiado</span>
-            </>
-          ) : (
-            <>
-              <Copy className="w-3.5 h-3.5" />
-              <span>Copiar</span>
-            </>
-          )}
+          {copied ? <Check className="w-4 h-4 text-signal-ink" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+          {copied ? 'Copiado' : 'Copiar'}
         </button>
       </div>
 
-      {/* Contenido Natural de la Descripción */}
       <div className="relative">
-        <div className="p-4 sm:p-5 rounded-2xl bg-gray-50/70 dark:bg-slate-950/40 border border-gray-150 dark:border-slate-800/80 space-y-2.5 shadow-2xs">
+        <ul className="m-0 p-0 list-none flex flex-col gap-2.5 max-w-[75ch]">
           {visibleLines.map((line, idx) => renderLine(line, idx))}
-        </div>
-
-        {/* Degradado suave al estar colapsado */}
+        </ul>
         {isLong && !isExpanded && (
-          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none rounded-b-2xl" />
+          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-surface to-transparent pointer-events-none" />
         )}
       </div>
 
-      {/* Botón Ver Más / Ver Menos */}
       {isLong && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           type="button"
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/70 hover:bg-gray-100 dark:bg-slate-950/40 dark:hover:bg-slate-800 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all cursor-pointer shadow-2xs"
+          aria-expanded={isExpanded}
+          className="self-start inline-flex items-center gap-2 min-h-11 px-4 rounded-[2px] border-2 border-ink text-ink font-semibold hover:bg-ink hover:text-bg transition-colors cursor-pointer"
         >
           {isExpanded ? (
             <>
-              <span>Ver menos</span>
-              <ChevronUp className="w-3.5 h-3.5" />
+              Ver menos
+              <ChevronUp className="w-4 h-4" aria-hidden="true" />
             </>
           ) : (
             <>
-              <span>Leer descripción completa ({lines.length - maxInitialLines} líneas más)</span>
-              <ChevronDown className="w-3.5 h-3.5" />
+              Leer completa ({lines.length - maxInitialLines} líneas más)
+              <ChevronDown className="w-4 h-4" aria-hidden="true" />
             </>
           )}
         </button>
       )}
 
-      {/* Badges de Garantía y Confianza */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-slate-800/80">
-        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-50/70 dark:bg-slate-950/30 border border-gray-100 dark:border-slate-800/50">
-          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span className="text-[11px] font-medium text-gray-600 dark:text-slate-400">
-            Stock real y condición verificada
-          </span>
-        </div>
-        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-50/70 dark:bg-slate-950/30 border border-gray-100 dark:border-slate-800/50">
-          <PackageCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-          <span className="text-[11px] font-medium text-gray-600 dark:text-slate-400">
-            Retiro en el día o envío coordinado
-          </span>
-        </div>
+      <div className="flex flex-wrap gap-x-8 gap-y-2 pt-4 border-t border-line">
+        <span className="inline-flex items-center gap-2 label-mono text-muted">
+          <ShieldCheck className="w-4 h-4 text-ink" aria-hidden="true" />
+          Stock real y condición verificada
+        </span>
+        <span className="inline-flex items-center gap-2 label-mono text-muted">
+          <PackageCheck className="w-4 h-4 text-ink" aria-hidden="true" />
+          Retiro en el día o envío coordinado
+        </span>
       </div>
     </div>
   );

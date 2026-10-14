@@ -6,7 +6,7 @@ import type { Item, ItemCondition, ItemStatus, ItemType, WithdrawalReason } from
 const mapFromDb = (dbItem: any): Item => ({
     id: dbItem.id,
     productName: dbItem.product_name,
-    purchasePrice: Number(dbItem.purchase_price),
+    purchasePrice: Number(dbItem.purchase_price ?? 0), // la tienda no lee costos
     salePrice: dbItem.sale_price ? Number(dbItem.sale_price) : undefined,
     quantity: Number(dbItem.quantity),
     date: dbItem.date || dbItem.created_at,
@@ -43,11 +43,23 @@ const mapFromDb = (dbItem: any): Item => ({
     storeVariantName: dbItem.store_variant_name ?? undefined,
 });
 
+/**
+ * Columnas que la tienda puede leer con la clave pública. No incluye costos,
+ * pagos, facturación ni notas internas: Supabase solo deja leer estas a los
+ * visitantes (ver supabase/seguridad-tienda.sql). Si agregás una columna acá,
+ * agregala también en ese GRANT.
+ */
+const STORE_COLUMNS = [
+    'id', 'created_at', 'date', 'product_name', 'store_title', 'sale_price', 'estimated_sale_price',
+    'quantity', 'status', 'item_condition', 'item_type', 'location', 'image_url', 'store_images',
+    'store_video_url', 'description', 'category', 'store_group', 'store_variant_name', 'public_in_store',
+].join(',');
+
 export const itemService = {
     async getPublicItemById(id: string): Promise<Item | null> {
         const { data, error } = await supabase
             .from('items')
-            .select('*')
+            .select(STORE_COLUMNS)
             .eq('id', id)
             .eq('public_in_store', true)
             .single();
@@ -64,7 +76,7 @@ export const itemService = {
     async getPublicItems(): Promise<Item[]> {
         const { data, error } = await supabase
             .from('items')
-            .select('*')
+            .select(STORE_COLUMNS)
             .eq('status', 'in_stock')
             .order('date', { ascending: false });
 
@@ -83,7 +95,7 @@ export const itemService = {
     async getPublicItemsByGroup(group: string): Promise<Item[]> {
         const { data, error } = await supabase
             .from('items')
-            .select('*')
+            .select(STORE_COLUMNS)
             .eq('status', 'in_stock')
             .eq('public_in_store', true)
             .eq('store_group', group)

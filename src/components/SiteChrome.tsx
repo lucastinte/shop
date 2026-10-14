@@ -30,9 +30,9 @@ export function TopStrip() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-x-6 gap-y-1">
                 <span className="flex items-center gap-2 whitespace-nowrap">
                     <span className="w-2 h-2 rounded-full bg-signal" aria-hidden="true" />
-                    Abra Pampa, Jujuy · 3.500 m
+                    {STORE_CONFIG.sedes.join(' · ')}
                 </span>
-                <span className="hidden md:inline whitespace-nowrap">Retiro en el día o envío coordinado</span>
+                <span className="hidden md:inline whitespace-nowrap">Retiro en ambas sedes o envío coordinado</span>
                 <span className="ml-auto whitespace-nowrap hidden sm:inline">Precios y stock al día</span>
             </div>
         </div>
@@ -117,7 +117,7 @@ export function SiteFooter() {
                             {STORE_CONFIG.storeName}
                         </span>
                     </span>
-                    <span className="label-mono">Abra Pampa, Jujuy · Puna jujeña</span>
+                    <span className="label-mono">Sedes: {STORE_CONFIG.sedes.join(' · ')}</span>
                     <a
                         href={getWhatsAppUrl('¡Hola! Tengo una consulta sobre los productos de la tienda.')}
                         target="_blank"

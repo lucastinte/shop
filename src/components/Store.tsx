@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { itemService } from '../services/itemService';
 import type { Item } from '../types';
-import { ArrowRight, RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
+import { RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
 import { ProductCard, groupPublicItems, entryStock } from './ProductCard';
 import { SiteFooter, SiteHeader, TopStrip, WhatsAppIcon } from './SiteChrome';
 import CartDrawer from './CartDrawer';
 import { iconForCategory } from '../lib/categoryIcon';
 import { capitalize, conditionLabel, formatPrice, priceOf } from '../lib/format';
-import { getWhatsAppUrl } from '../config/storeConfig';
+import { getWhatsAppUrl, SEDES_TEXT, type HeroBanner } from '../config/storeConfig';
+import HeroBanners from './HeroBanners';
 
 function scrollToCatalog() {
     document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -109,6 +110,14 @@ export default function Store() {
 
     const inStockCount = allEntries.filter(e => entryStock(e) > 0).length;
 
+    // Botón del banner: busca el producto; si no hay coincidencias, solo baja al catálogo
+    const handleBannerCta = (b: HeroBanner) => {
+        const q = b.query.toLowerCase();
+        const hasMatch = items.some(i => `${i.productName} ${i.storeTitle || ''}`.toLowerCase().includes(q));
+        if (hasMatch) setSearch(b.query);
+        requestAnimationFrame(scrollToCatalog);
+    };
+
     const searchBox = (
         <form
             role="search"
@@ -168,36 +177,10 @@ export default function Store() {
 
             {browsing && (
                 <section aria-label="Portada" className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 flex flex-wrap gap-4">
-                    <div className="relative flex-[2_1_560px] min-w-0 min-h-[340px] bg-sky text-on-sky rounded-[2px] overflow-hidden">
-                        {/* En móvil el motivo queda abajo; desde md va detrás, a la derecha */}
-                        <div className="absolute inset-x-0 bottom-0 h-44 md:inset-0 md:h-full pointer-events-none">
-                            <HeroMotif />
-                        </div>
-                        <div className="relative p-6 pb-48 sm:p-10 sm:pb-48 md:pb-10 flex flex-col gap-4 max-w-[30rem]">
-                            <span className="label-mono">Tecnología en la Puna</span>
-                            <h1 className="font-display font-black uppercase leading-[0.86] text-[clamp(52px,8vw,88px)]">
-                                Tecnología a 3.500 metros
-                            </h1>
-                            <p className="text-base sm:text-lg max-w-[34ch]">
-                                Conectividad, energía, celulares, audio y más, con precio y stock a la vista.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-3 pt-1">
-                                <button
-                                    type="button"
-                                    onClick={scrollToCatalog}
-                                    className="inline-flex items-center gap-2 min-h-12 px-5 rounded-[2px] bg-signal text-on-signal font-semibold hover:brightness-95 transition cursor-pointer"
-                                >
-                                    Ver catálogo
-                                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                                </button>
-                                {!loading && !error && inStockCount > 0 && (
-                                    <span className="label-mono px-2.5 py-1.5 border border-on-sky/40">
-                                        {inStockCount} producto{inStockCount !== 1 ? 's' : ''} en stock
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                    <HeroBanners
+                        onCta={handleBannerCta}
+                        badge={!loading && !error && inStockCount > 0 ? `${inStockCount} producto${inStockCount !== 1 ? 's' : ''} en stock` : undefined}
+                    />
 
                     <div className="flex-[1_1_300px] min-w-0 flex flex-col gap-4">
                         <a
@@ -218,7 +201,8 @@ export default function Store() {
                         >
                             <span className="label-mono text-night-muted">Entrega</span>
                             <span className="flex flex-col gap-2">
-                                <span className="font-display font-black uppercase text-[38px] leading-[0.9]">Retiro en el día</span>
+                                <span className="font-display font-black uppercase text-[38px] leading-[0.9]">Dos puntos de retiro</span>
+                                <span className="text-sm text-night-muted">{SEDES_TEXT}.</span>
                                 <span className="text-sm text-night-muted inline-flex items-center gap-2">
                                     <WhatsAppIcon className="w-4 h-4 shrink-0" />
                                     O envío coordinado: consultá tu zona
@@ -458,7 +442,7 @@ function HowToBuy() {
     const steps = [
         { n: '01', t: 'Armá tu carrito', d: 'Precio y stock al día en cada producto.' },
         { n: '02', t: 'Mandá el pedido', d: 'Se abre WhatsApp con el detalle listo para enviar.' },
-        { n: '03', t: 'Retirá o recibí', d: 'Retiro en el día o envío coordinado a tu zona.' },
+        { n: '03', t: 'Retirá o recibí', d: `Retiro en ${SEDES_TEXT}, o envío coordinado a tu zona.` },
     ];
     return (
         <section id="como-comprar" aria-labelledby="pasos-title" className="bg-sky text-on-sky scroll-mt-24">
@@ -477,36 +461,5 @@ function HowToBuy() {
                 </ol>
             </div>
         </section>
-    );
-}
-
-/** Motivo de la marca: línea de vista de la antena al satélite sobre la cordillera */
-function HeroMotif() {
-    return (
-        <svg
-            viewBox="0 0 760 340"
-            preserveAspectRatio="xMaxYMax slice"
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            aria-hidden="true"
-        >
-            <g className="fill-on-sky">
-                <circle cx="430" cy="40" r="1.6" opacity="0.8" />
-                <circle cx="520" cy="86" r="1.2" opacity="0.6" />
-                <circle cx="640" cy="32" r="1.7" opacity="0.85" />
-                <circle cx="722" cy="118" r="1.1" opacity="0.5" />
-                <circle cx="478" cy="156" r="1" opacity="0.5" />
-                <circle cx="590" cy="140" r="1.2" opacity="0.55" />
-            </g>
-            <path d="M 380 250 Q 590 10 820 170" className="stroke-on-sky" strokeWidth="1.5" strokeDasharray="2 9" strokeLinecap="round" fill="none" opacity="0.55" />
-            <path d="M 400 300 Q 610 90 820 240" className="stroke-on-sky" strokeWidth="1.2" strokeDasharray="2 9" strokeLinecap="round" fill="none" opacity="0.3" />
-            <line x1="512" y1="282" x2="660" y2="84" className="stroke-signal" strokeWidth="2.5" strokeDasharray="8 7" />
-            <circle cx="660" cy="84" r="18" className="stroke-signal" strokeWidth="2" fill="none" />
-            <rect x="652" y="79" width="16" height="10" className="fill-signal" />
-            <line x1="632" y1="84" x2="648" y2="84" className="stroke-on-sky" strokeWidth="3" />
-            <line x1="672" y1="84" x2="688" y2="84" className="stroke-on-sky" strokeWidth="3" />
-            <polygon points="360,318 420,284 468,300 530,256 590,284 650,242 710,276 760,256 760,340 360,340" className="fill-night" />
-            <polyline points="360,318 420,284 468,300 530,256 590,284 650,242 710,276 760,256" className="stroke-on-sky" strokeWidth="1.5" fill="none" opacity="0.6" />
-            <rect x="490" y="268" width="40" height="24" className="fill-on-sky" transform="rotate(-32 510 280)" />
-        </svg>
     );
 }

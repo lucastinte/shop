@@ -5,7 +5,7 @@
 
 /* ─────────────────────────────────────────────────────────────
    Dirección visual "Altiplano / Alta visibilidad"
-   Salar (fondo) · Noche (tinta) · Señal (acción) · Cielo Puna
+   Salar (fondo) · Noche (tinta) · Señal (acción) · Cielo
    Los colores viven en variables para que el modo oscuro
    cambie todo sin repetir clases dark: en cada componente.
    ───────────────────────────────────────────────────────────── */
@@ -20,7 +20,7 @@
   --signal: #FF5B14;      /* Señal: solo rellenos de acción */
   --on-signal: #101521;   /* texto sobre Señal */
   --signal-ink: #A63A08;  /* naranja legible como texto */
-  --sky: #1E3A9E;         /* Cielo Puna */
+  --sky: #1E3A9E;         /* Cielo */
   --on-sky: #F3F0E8;
   --night: #101521;       /* franjas y pie */
   --on-night: #F3F0E8;

@@ -9,6 +9,18 @@ import { SiteFooter, SiteHeader, TopStrip, WhatsAppIcon } from './SiteChrome';
 import CartDrawer, { QtyStepper } from './CartDrawer';
 import EntregaJujuy, { ENTREGA_INICIAL, RetiroSede, entregaMensaje, esDeSedeJujuy, retiroSedeMensaje, type Entrega } from './EntregaJujuy';
 import { conditionLabel, formatPrice, priceOf, capitalize } from '../lib/format';
+import { groupSameProduct, pickRep } from '../lib/grouping';
+
+/** Datos de tienda (textos, fotos, video) que se toman del registro más completo */
+const pickContent = (i: Item): Partial<Item> => ({
+    storeTitle: i.storeTitle,
+    description: i.description,
+    storeImages: i.storeImages,
+    storeVideoUrl: i.storeVideoUrl,
+    imageUrl: i.imageUrl,
+    category: i.category,
+    storeGroup: i.storeGroup,
+});
 import {
     X,
     Copy,
@@ -155,23 +167,25 @@ export default function StoreProduct({ id }: { id: string }) {
 
     useEffect(() => {
         setLoading(true);
-        itemService.getPublicItemById(id)
-            .then(async data => {
+        itemService.getPublicItems()
+            .then(async allPublic => {
+                // El producto puede estar en la lista de la tienda (aunque esa tanda no
+                // tenga el tilde de publicar) o ser uno publicado ya vendido.
+                const data = allPublic.find(i => i.id === id) ?? await itemService.getPublicItemById(id);
                 if (!data) { setNotFound(true); return; }
-                setItem(data);
-                setSelectedVariantId(data.id);
 
-                const allPublic = await itemService.getPublicItems();
-
-                // Variantes: mismo storeGroup; sin grupo, el mismo producto por título
-                // (así un producto cargado en cada sede se muestra junto, igual que en el catálogo)
-                const titleKey = (i: Item) => (i.storeTitle || i.productName || '').trim().toLowerCase();
-                const groupItems = data.storeGroup
-                    ? await itemService.getPublicItemsByGroup(data.storeGroup)
-                    : allPublic.filter(i => !i.storeGroup && titleKey(i) === titleKey(data));
+                // Variantes: los registros del mismo producto (mismo nombre, grupo o
+                // título), igual que en el catálogo; así se ven todas las sedes.
+                const groupItems = groupSameProduct(allPublic).find(g => g.some(i => i.id === data.id)) ?? [data];
                 if (groupItems.length > 1) {
                     setVariants(groupItems);
+                    // Fotos y textos del registro más completo del grupo
+                    const rep = pickRep(groupItems);
+                    setItem(rep.id === data.id ? data : { ...data, ...pickContent(rep), id: data.id });
+                } else {
+                    setItem(data);
                 }
+                setSelectedVariantId(data.id);
                 const siblingIds = new Set(groupItems.map(i => i.id));
 
                 // Cargar relacionados

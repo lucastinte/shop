@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowUpRight, Images, Layers, MapPin } from 'lucide-react';
 import type { Item } from '../types';
 import { conditionLabel, formatPrice, priceOf, capitalize } from '../lib/format';
+import { groupSameProduct, pickRep } from '../lib/grouping';
 
 // Un "producto" en la tienda puede ser un grupo de variantes (mismo storeGroup)
 export interface StoreEntry {
@@ -9,24 +10,9 @@ export interface StoreEntry {
     variants: Item[];   // todas las variantes (incluye al rep)
 }
 
-/** Agrupa items publicados por storeGroup; sin grupo → agrupa por título */
+/** Agrupa los registros del mismo producto (mismo nombre, grupo o título de tienda) */
 export function groupPublicItems(items: Item[]): StoreEntry[] {
-    const byGroup = new Map<string, Item[]>();
-    for (const it of items) {
-        let g = (it.storeGroup || '').trim();
-        if (!g) {
-            g = `_TITLE_${(it.storeTitle || it.productName || '').trim().toLowerCase()}`;
-        }
-        if (!byGroup.has(g)) byGroup.set(g, []);
-        byGroup.get(g)!.push(it);
-    }
-    const score = (i: Item) => (i.storeTitle ? 4 : 0) + (i.description ? 2 : 0) + (i.storeImages?.length ? 1 : 0) + (i.imageUrl ? 1 : 0);
-    const entries: StoreEntry[] = [];
-    for (const variants of byGroup.values()) {
-        const rep = [...variants].sort((a, b) => score(b) - score(a))[0];
-        entries.push({ rep, variants });
-    }
-    return entries;
+    return groupSameProduct(items).map(variants => ({ rep: pickRep(variants), variants }));
 }
 
 /** Stock total de una entrada (suma de variantes) */
@@ -74,6 +60,9 @@ export function ProductCard({ entry }: { entry: StoreEntry }) {
     });
     const locations = Array.from(locMap.values()).join(' · ');
     const variantCount = maxByKey.size;
+    // Si lo único que cambia es la sede, se muestra "En 2 sedes" en vez de "2 opciones"
+    const nombresVariante = new Set(variants.map(v => (v.storeVariantName || '').trim().toLowerCase()));
+    const soloSedes = variantCount > 1 && nombresVariante.size <= 1 && locMap.size > 1;
     const descPreview = cleanDescriptionPreview(item.description);
     const title = item.storeTitle || item.productName;
 
@@ -136,7 +125,7 @@ export function ProductCard({ entry }: { entry: StoreEntry }) {
                 {variantCount > 1 && (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-2 self-start">
                         <Layers className="w-3.5 h-3.5" aria-hidden="true" />
-                        {variantCount} opciones
+                        {soloSedes ? `En ${locMap.size} sedes` : `${variantCount} opciones`}
                     </span>
                 )}
 

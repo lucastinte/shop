@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type TouchEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type TouchEvent } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HERO_BANNERS, type HeroArt, type HeroBanner } from '../config/storeConfig';
 
@@ -87,7 +87,7 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
                         >
                             {/* Celular y tablet: el dibujo va abajo. Escritorio ancho: detrás, a la derecha */}
                             <div className="absolute inset-x-0 bottom-0 h-40 sm:h-48 xl:inset-0 xl:h-full pointer-events-none">
-                                <BannerArt art={b.art} animate={!reduceMotion.current} narrow={narrow} />
+                                <BannerArt art={b.art} narrow={narrow} />
                             </div>
                             <div className="relative p-6 pb-44 sm:p-10 sm:pb-60 xl:pb-10 flex flex-col gap-3 sm:gap-4 max-w-[30rem]">
                                 <span className="label-mono">{b.kicker}</span>
@@ -156,13 +156,25 @@ export default function HeroBanners({ onCta, badge }: HeroBannersProps) {
 }
 
 /*
- * Animaciones con SMIL (<animate>/<animateTransform>) para poder mover el haz
- * de señal junto con el satélite. Solo se agregan si el sistema no pide
- * "reducir movimiento".
+ * Animaciones con CSS (clases anim-* en index.css), que funcionan igual en
+ * Safari, Chrome y Android. Para girar alrededor de un punto se usa el patrón
+ * translate(punto) → rotación CSS con origen 0 0 → translate(-punto), que no
+ * depende de cómo cada navegador interpreta transform-origin en SVG.
+ * Con "reducir movimiento" activado en el sistema, el dibujo queda quieto.
  */
-const SPLINE = '0.45 0 0.55 1';
 
-function BannerArt({ art, animate, narrow }: { art: HeroArt; animate: boolean; narrow: boolean }) {
+/** Gira su contenido alrededor de (x, y) con la clase de animación dada */
+function Pivot({ x, y, className, style, children }: { x: number; y: number; className: string; style?: CSSProperties; children: ReactNode }) {
+    return (
+        <g transform={`translate(${x} ${y})`}>
+            <g className={className} style={style}>
+                <g transform={`translate(${-x} ${-y})`}>{children}</g>
+            </g>
+        </g>
+    );
+}
+
+function BannerArt({ art, narrow }: { art: HeroArt; narrow: boolean }) {
     // Las escenas ocupan la mitad derecha del lienzo (x 340-760, y 50-340).
     // En el celular el dibujo va solo debajo del texto: se recorta a esa zona y se
     // centra, para que no quede chico en la esquina con media franja vacía.
@@ -173,91 +185,64 @@ function BannerArt({ art, animate, narrow }: { art: HeroArt; animate: boolean; n
             className="absolute inset-0 w-full h-full"
             aria-hidden="true"
         >
-            <Stars animate={animate} />
+            <Stars />
             <path d="M 380 250 Q 590 10 820 170" className="stroke-on-sky" strokeWidth="1.5" strokeDasharray="2 9" strokeLinecap="round" fill="none" opacity="0.5" />
             <path d="M 400 300 Q 610 90 820 240" className="stroke-on-sky" strokeWidth="1.2" strokeDasharray="2 9" strokeLinecap="round" fill="none" opacity="0.28" />
-            {art === 'dish' ? <DishScene animate={animate} /> : <CarScene animate={animate} />}
+            {art === 'dish' ? <DishScene /> : <CarScene />}
         </svg>
     );
 }
 
-function Stars({ animate }: { animate: boolean }) {
+function Stars() {
     const stars = [
-        { cx: 430, cy: 40, r: 1.6, o: 0.8, d: '3.1s' },
-        { cx: 520, cy: 86, r: 1.2, o: 0.6, d: '4.3s' },
-        { cx: 740, cy: 34, r: 1.7, o: 0.85, d: '3.7s' },
-        { cx: 722, cy: 140, r: 1.1, o: 0.5, d: '5.2s' },
-        { cx: 478, cy: 156, r: 1, o: 0.5, d: '4.8s' },
-        { cx: 590, cy: 30, r: 1.2, o: 0.55, d: '3.4s' },
+        { cx: 430, cy: 40, r: 1.6, o: 0.8, d: '0s' },
+        { cx: 520, cy: 86, r: 1.2, o: 0.6, d: '-1.2s' },
+        { cx: 740, cy: 34, r: 1.7, o: 0.85, d: '-2.1s' },
+        { cx: 722, cy: 140, r: 1.1, o: 0.5, d: '-0.6s' },
+        { cx: 478, cy: 156, r: 1, o: 0.5, d: '-2.8s' },
+        { cx: 590, cy: 30, r: 1.2, o: 0.55, d: '-1.7s' },
     ];
     return (
         <g className="fill-on-sky">
             {stars.map(st => (
-                <circle key={`${st.cx}-${st.cy}`} cx={st.cx} cy={st.cy} r={st.r} opacity={st.o}>
-                    {animate && (
-                        <animate attributeName="opacity" values={`${st.o};${st.o * 0.25};${st.o}`} dur={st.d} repeatCount="indefinite" />
-                    )}
-                </circle>
+                <circle key={`${st.cx}-${st.cy}`} cx={st.cx} cy={st.cy} r={st.r} opacity={st.o} className="anim-titila" style={{ animationDelay: st.d }} />
             ))}
         </g>
     );
 }
 
-/** Recorrido del satélite (desplazamientos relativos a su posición) */
-const ORBIT = [
-    [-46, 14],
-    [0, 0],
-    [46, 14],
-    [0, 0],
-    [-46, 14],
-];
-const ORBIT_DUR = '18s';
-
-function Satellite({ x, y, animate }: { x: number; y: number; animate: boolean }) {
+/** Satélite: el anillo late y el cuerpo se mantiene derecho mientras orbita */
+function Satellite({ x, y, amp }: { x: number; y: number; amp: string }) {
     return (
-        <g>
-            {animate && (
-                <animateTransform
-                    attributeName="transform"
-                    type="translate"
-                    values={ORBIT.map(([dx, dy]) => `${dx} ${dy}`).join(';')}
-                    dur={ORBIT_DUR}
-                    repeatCount="indefinite"
-                    calcMode="spline"
-                    keySplines={Array(ORBIT.length - 1).fill(SPLINE).join(';')}
-                />
-            )}
-            <circle cx={x} cy={y} r="18" className="stroke-signal" strokeWidth="2" fill="none">
-                {animate && <animate attributeName="r" values="16;20;16" dur="2.4s" repeatCount="indefinite" />}
-            </circle>
+        <Pivot x={x} y={y} className="anim-orbita-inv" style={{ '--amp': amp } as CSSProperties}>
+            <Pivot x={x} y={y} className="anim-pulso">
+                <circle cx={x} cy={y} r="18" className="stroke-signal" strokeWidth="2" fill="none" />
+            </Pivot>
             <rect x={x - 8} y={y - 5} width="16" height="10" className="fill-signal" />
             <line x1={x - 28} y1={y} x2={x - 12} y2={y} className="stroke-on-sky" strokeWidth="3" />
             <line x1={x + 12} y1={y} x2={x + 28} y2={y} className="stroke-on-sky" strokeWidth="3" />
-        </g>
+        </Pivot>
     );
 }
 
-/** Haz punteado de la antena al satélite: sigue la órbita y la señal "corre" */
-function Beam({ x1, y1, x2, y2, animate }: { x1: number; y1: number; x2: number; y2: number; animate: boolean }) {
+/**
+ * Haz de la antena al satélite + satélite, girando juntos alrededor de la
+ * antena: el satélite recorre su órbita y el haz siempre lo sigue.
+ */
+function Orbit({ fromX, fromY, toX, toY, amp }: { fromX: number; fromY: number; toX: number; toY: number; amp: string }) {
     return (
-        <line x1={x1} y1={y1} x2={x2} y2={y2} className="stroke-signal" strokeWidth="2.5" strokeDasharray="8 7">
-            {animate && (
-                <>
-                    <animate attributeName="x2" values={ORBIT.map(([dx]) => x2 + dx).join(';')} dur={ORBIT_DUR} repeatCount="indefinite" calcMode="spline" keySplines={Array(ORBIT.length - 1).fill(SPLINE).join(';')} />
-                    <animate attributeName="y2" values={ORBIT.map(([, dy]) => y2 + dy).join(';')} dur={ORBIT_DUR} repeatCount="indefinite" calcMode="spline" keySplines={Array(ORBIT.length - 1).fill(SPLINE).join(';')} />
-                    <animate attributeName="stroke-dashoffset" from="0" to="-30" dur="1.1s" repeatCount="indefinite" />
-                </>
-            )}
-        </line>
+        <Pivot x={fromX} y={fromY} className="anim-orbita" style={{ '--amp': amp } as CSSProperties}>
+            <line x1={fromX} y1={fromY} x2={toX} y2={toY} className="stroke-signal anim-senal" strokeWidth="2.5" strokeDasharray="8 7" />
+            <Satellite x={toX} y={toY} amp={amp} />
+        </Pivot>
     );
 }
 
 /** Antena sobre la cordillera apuntando al satélite */
-function DishScene({ animate }: { animate: boolean }) {
+function DishScene() {
     return (
         <g>
-            <Beam x1={512} y1={282} x2={660} y2={84} animate={animate} />
-            <Satellite x={660} y={84} animate={animate} />
+            <Orbit fromX={512} fromY={282} toX={660} toY={84} amp="9deg" />
             <polygon points="360,318 420,284 468,300 530,256 590,284 650,242 710,276 760,256 760,340 360,340" className="fill-night" />
             <polyline points="360,318 420,284 468,300 530,256 590,284 650,242 710,276 760,256" className="stroke-on-sky" strokeWidth="1.5" fill="none" opacity="0.6" />
             <rect x="490" y="268" width="40" height="24" className="fill-on-sky" transform="rotate(-32 510 280)" />
@@ -265,70 +250,54 @@ function DishScene({ animate }: { animate: boolean }) {
     );
 }
 
-function Wheel({ cx, animate }: { cx: number; animate: boolean }) {
+function Wheel({ cx }: { cx: number }) {
     const cy = 290;
     return (
         <g>
             <circle cx={cx} cy={cy} r="20" className="fill-night stroke-on-sky" strokeWidth="3" />
-            <g>
-                {animate && (
-                    <animateTransform attributeName="transform" type="rotate" from={`0 ${cx} ${cy}`} to={`-360 ${cx} ${cy}`} dur="0.7s" repeatCount="indefinite" />
-                )}
+            <Pivot x={cx} y={cy} className="anim-rueda">
                 <circle cx={cx} cy={cy} r="7" className="fill-on-sky" />
                 <rect x={cx - 1.5} y={cy - 16} width="3" height="9" className="fill-on-sky" />
                 <rect x={cx - 1.5} y={cy + 7} width="3" height="9" className="fill-on-sky" />
-            </g>
+            </Pivot>
         </g>
     );
 }
 
 /** Camioneta en la ruta con la antena en el techo y el adaptador al vehículo */
-function CarScene({ animate }: { animate: boolean }) {
+function CarScene() {
     return (
         <g>
             {/* Cerros de fondo: se desplazan despacio (paralaje) */}
-            <g>
-                {animate && (
-                    <animateTransform attributeName="transform" type="translate" values="0 0; 14 0; 0 0" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines={`${SPLINE};${SPLINE}`} />
-                )}
-                <polyline points="340,262 420,236 470,250 540,214 600,240 660,206 720,232 780,220" className="stroke-on-sky" strokeWidth="1.5" fill="none" opacity="0.35" />
+            <g className="anim-cerros">
+                <polyline points="320,262 420,236 470,250 540,214 600,240 660,206 720,232 790,220" className="stroke-on-sky" strokeWidth="1.5" fill="none" opacity="0.35" />
             </g>
 
             {/* Señal: de la antena del techo al satélite */}
-            <Beam x1={606} y1={186} x2={676} y2={74} animate={animate} />
-            <Satellite x={676} y={74} animate={animate} />
+            <Orbit fromX={606} fromY={186} toX={676} toY={74} amp="12deg" />
 
             {/* Ruta: la línea punteada corre para dar sensación de avance */}
             <rect x="360" y="296" width="400" height="44" className="fill-night" />
-            <line x1="360" y1="318" x2="760" y2="318" className="stroke-on-sky" strokeWidth="2" strokeDasharray="22 16" opacity="0.6">
-                {animate && <animate attributeName="stroke-dashoffset" from="0" to="-38" dur="0.45s" repeatCount="indefinite" />}
-            </line>
+            <line x1="360" y1="318" x2="760" y2="318" className="stroke-on-sky anim-ruta" strokeWidth="2" strokeDasharray="22 16" opacity="0.6" />
 
             {/* Camioneta (con un leve rebote) */}
-            <g>
-                {animate && (
-                    <animateTransform attributeName="transform" type="translate" values="0 0; 0 -1.6; 0 0; 0 -0.8; 0 0" dur="0.9s" repeatCount="indefinite" />
-                )}
+            <g className="anim-rebote">
                 <path
                     d="M452,288 L452,252 Q454,240 470,239 L552,236 L576,208 L646,208 L668,236 L738,236 Q744,237 744,246 L744,288 Z"
                     className="fill-on-sky"
                 />
                 <polygon points="562,236 582,214 608,214 608,236" className="fill-sky" />
                 <polygon points="614,214 642,214 660,236 614,236" className="fill-sky" />
-                <rect x="452" y="258" width="14" height="8" className="fill-signal">
-                    {animate && <animate attributeName="opacity" values="1;0.55;1" dur="1.6s" repeatCount="indefinite" />}
-                </rect>
+                <rect x="452" y="258" width="14" height="8" className="fill-signal anim-luz" />
                 {/* Antena en el techo */}
                 <line x1="606" y1="208" x2="606" y2="198" className="stroke-night" strokeWidth="3" />
                 <rect x="588" y="186" width="38" height="11" className="fill-night" transform="rotate(-14 607 191)" />
             </g>
-            <Wheel cx={500} animate={animate} />
-            <Wheel cx={694} animate={animate} />
+            <Wheel cx={500} />
+            <Wheel cx={694} />
 
             {/* Cable al adaptador del auto */}
-            <path d="M606,200 C 560,170 520,150 506,128" className="stroke-signal" strokeWidth="2" strokeDasharray="3 5" fill="none">
-                {animate && <animate attributeName="stroke-dashoffset" from="0" to="16" dur="1s" repeatCount="indefinite" />}
-            </path>
+            <path d="M606,200 C 560,170 520,150 506,128" className="stroke-signal anim-cable" strokeWidth="2" strokeDasharray="3 5" fill="none" />
 
             {/* Detalle del adaptador */}
             <g transform="translate(436 70)">

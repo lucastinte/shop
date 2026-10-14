@@ -1,13 +1,35 @@
 @import "tailwindcss";
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: light;
-  color: #111827;
-  background-color: #f8fafc;
+/* El tema oscuro se activa con la clase .dark en <html> (ver useTheme) */
+@custom-variant dark (&:where(.dark, .dark *));
 
+/* ─────────────────────────────────────────────────────────────
+   Dirección visual "Altiplano / Alta visibilidad"
+   Salar (fondo) · Noche (tinta) · Señal (acción) · Cielo Puna
+   Los colores viven en variables para que el modo oscuro
+   cambie todo sin repetir clases dark: en cada componente.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --bg: #F3F0E8;          /* Salar */
+  --surface: #FAF8F3;     /* tarjetas */
+  --sunken: #E9E4D8;      /* Adobe: bandas, placeholders */
+  --line: #CFC8B8;        /* bordes finos */
+  --ink: #101521;         /* Noche: texto y bordes fuertes */
+  --ink-2: #2A2F3C;       /* texto secundario */
+  --muted: #4A5060;       /* etiquetas */
+  --signal: #FF5B14;      /* Señal: solo rellenos de acción */
+  --on-signal: #101521;   /* texto sobre Señal */
+  --signal-ink: #A63A08;  /* naranja legible como texto */
+  --sky: #1E3A9E;         /* Cielo Puna */
+  --on-sky: #F3F0E8;
+  --night: #101521;       /* franjas y pie */
+  --on-night: #F3F0E8;
+  --night-muted: #B8BDC9;
+  --night-line: #2A3040;
+  --hatch-a: #DED8CA;
+  --hatch-b: #E9E4D8;
+
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -15,98 +37,89 @@
 }
 
 html.dark {
+  --bg: #0E121B;
+  --surface: #161B26;
+  --sunken: #1C2230;
+  --line: #2B3243;
+  --ink: #F1EEE6;
+  --ink-2: #C8CCD5;
+  --muted: #9BA2B1;
+  --signal: #FF6A2B;
+  --on-signal: #101521;
+  --signal-ink: #FF8A55;
+  --sky: #1E3A9E;
+  --on-sky: #F3F0E8;
+  --night: #070A10;
+  --on-night: #F3F0E8;
+  --night-muted: #A9AFBC;
+  --night-line: #222838;
+  --hatch-a: #1C2230;
+  --hatch-b: #161B26;
+
   color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-signal: var(--signal);
+  --color-on-signal: var(--on-signal);
+  --color-signal-ink: var(--signal-ink);
+  --color-sky: var(--sky);
+  --color-on-sky: var(--on-sky);
+  --color-night: var(--night);
+  --color-on-night: var(--on-night);
+  --color-night-muted: var(--night-muted);
+  --color-night-line: var(--night-line);
+}
+
+@theme {
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+}
+
+html {
+  background-color: var(--bg);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%);
-  color: #111827;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.5;
 }
 
-html.dark body {
-  background: linear-gradient(180deg, #0b1220 0%, #111827 55%);
-  color: #e5e7eb;
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+  }
 }
 
-/* Global dark overrides */
-html.dark .bg-white {
-  background-color: #111827 !important;
+::selection {
+  background: var(--signal);
+  color: var(--on-signal);
 }
 
-html.dark .bg-gray-50,
-html.dark .bg-gray-100,
-html.dark .bg-blue-50,
-html.dark .bg-blue-50\/50,
-html.dark .bg-rose-50,
-html.dark .bg-emerald-50,
-html.dark .bg-gray-50\/30,
-html.dark .bg-gray-50\/50 {
-  background-color: #0f172a !important;
+/* Placeholder rayado para productos sin foto */
+.hatch {
+  background: repeating-linear-gradient(135deg, var(--hatch-a) 0 2px, var(--hatch-b) 2px 14px);
 }
 
-html.dark .border-gray-100,
-html.dark .border-gray-200,
-html.dark .border-blue-100,
-html.dark .border-blue-200,
-html.dark .border-rose-100 {
-  border-color: #2b3649 !important;
-}
-
-html.dark .text-gray-900 {
-  color: #f8fafc !important;
-}
-
-html.dark .text-gray-800 {
-  color: #f1f5f9 !important;
-}
-
-html.dark .text-gray-700 {
-  color: #cbd5e1 !important;
-}
-
-html.dark .text-gray-600,
-html.dark .text-gray-500 {
-  color: #9fb0c7 !important;
-}
-
-html.dark .text-gray-400 {
-  color: #70839d !important;
-}
-
-html.dark .bg-black {
-  background-color: #1f2937 !important;
-}
-
-html.dark .bg-black.text-white {
-  color: #f8fafc !important;
-}
-
-html.dark input,
-html.dark select,
-html.dark textarea {
-  background-color: #0b1220 !important;
-  color: #e5e7eb !important;
-  border-color: #334155 !important;
-}
-
-html.dark input::placeholder,
-html.dark textarea::placeholder {
-  color: #64748b !important;
-}
-
-html.dark .shadow-sm,
-html.dark .shadow-md,
-html.dark .shadow-lg,
-html.dark .shadow-xl,
-html.dark .shadow-2xl {
-  box-shadow: 0 8px 26px rgba(2, 6, 23, 0.45) !important;
-}
-
-@theme {
-  --color-primary: #3b82f6; 
-  --color-secondary: #10b981;
+/* Etiqueta técnica: mono, mayúsculas, espaciada */
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -116,11 +129,35 @@ html.dark .shadow-2xl {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .safe-bottom {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
+@keyframes drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-drawer-in {
+  animation: drawer-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drawer-in,
+  .animate-fade-in {
+    animation: none;
+  }
+}

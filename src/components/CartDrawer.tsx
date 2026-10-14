@@ -4,9 +4,11 @@ import { useCart, type CartItem } from '../contexts/CartContext';
 import { getWhatsAppUrl, STORE_CONFIG } from '../config/storeConfig';
 import { conditionLabel, formatPrice } from '../lib/format';
 import { WhatsAppIcon } from './SiteChrome';
+import EntregaJujuy, { ENTREGA_INICIAL, entregaAviso, entregaMensaje, esDeSedeJujuy, type Entrega } from './EntregaJujuy';
+import { RETIRO_JUJUY } from '../config/storeConfig';
 
 /** Mensaje de pedido para WhatsApp (mismo formato que antes) */
-export function buildOrderMessage(cart: CartItem[], totalPrice: number, customerName: string): string {
+export function buildOrderMessage(cart: CartItem[], totalPrice: number, customerName: string, entrega?: Entrega): string {
     let text = `🛒 *Nuevo Pedido - ${STORE_CONFIG.storeName}*\n`;
     text += `=====================================\n`;
     if (customerName.trim()) {
@@ -27,6 +29,10 @@ export function buildOrderMessage(cart: CartItem[], totalPrice: number, customer
 
     text += `=====================================\n`;
     text += `*Total del Pedido:* $${totalPrice.toLocaleString('es-AR')}\n\n`;
+    if (entrega) {
+        const todos = cart.every(i => esDeSedeJujuy(i.location));
+        text += entregaMensaje(entrega, todos ? undefined : `productos de ${RETIRO_JUJUY.sede}`) + '\n';
+    }
     text += `¡Hola! Me interesa coordinar la compra de estos productos de la tienda.`;
     return text;
 }
@@ -34,6 +40,7 @@ export function buildOrderMessage(cart: CartItem[], totalPrice: number, customer
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     const { cart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
     const [customerName, setCustomerName] = useState('');
+    const [entrega, setEntrega] = useState<Entrega>(ENTREGA_INICIAL);
     const closeRef = useRef<HTMLButtonElement>(null);
     const onCloseRef = useRef(onClose);
     useEffect(() => {
@@ -60,9 +67,12 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 
     if (!open) return null;
 
+    const conJujuy = cart.some(i => esDeSedeJujuy(i.location));
+    const soloJujuy = conJujuy && cart.every(i => esDeSedeJujuy(i.location));
+
     const handleCheckout = () => {
         if (cart.length === 0) return;
-        window.open(getWhatsAppUrl(buildOrderMessage(cart, totalPrice, customerName)), '_blank');
+        window.open(getWhatsAppUrl(buildOrderMessage(cart, totalPrice, customerName, conJujuy ? entrega : undefined)), '_blank');
         clearCart();
         onClose();
     };
@@ -154,6 +164,16 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                                 ))}
                             </ul>
                         )}
+                        {conJujuy && (
+                            <div className="pt-4 mt-2 border-t border-line">
+                                <EntregaJujuy
+                                    idPrefix="carrito-entrega"
+                                    value={entrega}
+                                    onChange={setEntrega}
+                                    alcance={soloJujuy ? undefined : `productos de ${RETIRO_JUJUY.sede}`}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {cart.length > 0 && (
@@ -185,7 +205,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                                 Enviar pedido por WhatsApp
                             </button>
                             <p className="text-xs text-muted text-center -mt-1">
-                                Se abre WhatsApp con el detalle; ahí coordinamos pago y entrega.
+                                {(conJujuy && entregaAviso(entrega)) || 'Se abre WhatsApp con el detalle; ahí coordinamos pago y entrega.'}
                             </p>
                         </div>
                     )}

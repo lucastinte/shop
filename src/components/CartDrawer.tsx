@@ -4,10 +4,21 @@ import { useCart, type CartItem } from '../contexts/CartContext';
 import { getWhatsAppUrl, STORE_CONFIG } from '../config/storeConfig';
 import { conditionLabel, formatPrice } from '../lib/format';
 import { WhatsAppIcon } from './SiteChrome';
-import EntregaJujuy, { ENTREGA_INICIAL, entregaAviso, entregaMensaje, esDeSedeJujuy, type Entrega } from './EntregaJujuy';
-import { RETIRO_JUJUY } from '../config/storeConfig';
+import EntregaJujuy, { ENTREGA_INICIAL, RetiroSede, entregaAviso, entregaMensaje, esDeSedeJujuy, retiroSedeMensaje, type Entrega } from './EntregaJujuy';
+import { RETIRO_JUJUY, sedeDe, type Sede } from '../config/storeConfig';
 
 /** Mensaje de pedido para WhatsApp (mismo formato que antes) */
+/** Sedes (con dirección, sin opciones de envío) de los productos del carrito, salvo San Salvador */
+export function otrasSedes(cart: CartItem[]): Sede[] {
+    const out: Sede[] = [];
+    for (const i of cart) {
+        if (esDeSedeJujuy(i.location)) continue;
+        const sd = sedeDe(i.location);
+        if (sd?.direccion && !out.includes(sd)) out.push(sd);
+    }
+    return out;
+}
+
 export function buildOrderMessage(cart: CartItem[], totalPrice: number, customerName: string, entrega?: Entrega): string {
     let text = `🛒 *Nuevo Pedido - ${STORE_CONFIG.storeName}*\n`;
     text += `=====================================\n`;
@@ -29,9 +40,13 @@ export function buildOrderMessage(cart: CartItem[], totalPrice: number, customer
 
     text += `=====================================\n`;
     text += `*Total del Pedido:* $${totalPrice.toLocaleString('es-AR')}\n\n`;
+    const otras = otrasSedes(cart);
+    const variasSedes = (entrega ? 1 : 0) + otras.length > 1;
     if (entrega) {
-        const todos = cart.every(i => esDeSedeJujuy(i.location));
-        text += entregaMensaje(entrega, todos ? undefined : `productos de ${RETIRO_JUJUY.sede}`) + '\n';
+        text += entregaMensaje(entrega, variasSedes ? `productos de ${RETIRO_JUJUY.sede}` : undefined) + '\n';
+    }
+    for (const sd of otras) {
+        text += retiroSedeMensaje(sd, variasSedes ? `productos de ${sd.nombre}` : undefined) + '\n';
     }
     text += `¡Hola! Me interesa coordinar la compra de estos productos de la tienda.`;
     return text;
@@ -68,7 +83,8 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     if (!open) return null;
 
     const conJujuy = cart.some(i => esDeSedeJujuy(i.location));
-    const soloJujuy = conJujuy && cart.every(i => esDeSedeJujuy(i.location));
+    const otras = otrasSedes(cart);
+    const variasSedes = (conJujuy ? 1 : 0) + otras.length > 1;
 
     const handleCheckout = () => {
         if (cart.length === 0) return;
@@ -170,10 +186,15 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                                     idPrefix="carrito-entrega"
                                     value={entrega}
                                     onChange={setEntrega}
-                                    alcance={soloJujuy ? undefined : `productos de ${RETIRO_JUJUY.sede}`}
+                                    alcance={variasSedes ? `productos de ${RETIRO_JUJUY.sede}` : undefined}
                                 />
                             </div>
                         )}
+                        {otras.map(sd => (
+                            <div key={sd.nombre} className="pt-4 mt-2 border-t border-line">
+                                <RetiroSede sede={sd} alcance={variasSedes ? `productos de ${sd.nombre}` : undefined} />
+                            </div>
+                        ))}
                     </div>
 
                     {cart.length > 0 && (

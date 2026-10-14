@@ -52,33 +52,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cart]);
 
+  // El resultado se calcula con el carrito actual (no dentro del updater de
+  // setState, que React puede ejecutar más tarde y dejaría el valor en false).
   const addToCart = (item: Omit<CartItem, 'quantity'>, quantityToAdd = 1): boolean => {
-    let success = false;
-    setCart((prev) => {
-      const existingIdx = prev.findIndex((i) => i.id === item.id);
-      if (existingIdx > -1) {
-        const existingItem = prev[existingIdx];
-        const nextQty = existingItem.quantity + quantityToAdd;
-        const updated = [...prev];
-        if (nextQty <= item.maxQuantity) {
-          updated[existingIdx] = { ...existingItem, quantity: nextQty };
-        } else {
-          updated[existingIdx] = { ...existingItem, quantity: item.maxQuantity };
-          alert(`Solo quedan ${item.maxQuantity} unidades disponibles de este producto.`);
-        }
-        success = true;
-        return updated;
-      } else {
-        if (quantityToAdd <= item.maxQuantity) {
-          success = true;
-          return [...prev, { ...item, quantity: quantityToAdd }];
-        } else {
-          alert(`No puedes agregar más del stock disponible (${item.maxQuantity} unidades).`);
-          return prev;
-        }
+    const existing = cart.find((i) => i.id === item.id);
+    if (existing) {
+      const wanted = existing.quantity + quantityToAdd;
+      const nextQty = Math.min(wanted, item.maxQuantity);
+      if (wanted > item.maxQuantity) {
+        alert(`Solo quedan ${item.maxQuantity} unidades disponibles de este producto.`);
       }
-    });
-    return success;
+      setCart((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity: nextQty } : i)));
+      return true;
+    }
+    if (quantityToAdd > item.maxQuantity) {
+      alert(`No puedes agregar más del stock disponible (${item.maxQuantity} unidades).`);
+      return false;
+    }
+    setCart((prev) => [...prev, { ...item, quantity: quantityToAdd }]);
+    return true;
   };
 
   const removeFromCart = (id: string) => {
@@ -90,24 +82,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       removeFromCart(id);
       return true;
     }
-    let success = false;
-    setCart((prev) => {
-      const idx = prev.findIndex((item) => item.id === id);
-      if (idx > -1) {
-        const item = prev[idx];
-        if (newQty <= item.maxQuantity) {
-          const updated = [...prev];
-          updated[idx] = { ...item, quantity: newQty };
-          success = true;
-          return updated;
-        } else {
-          alert(`Solo hay ${item.maxQuantity} unidades disponibles de este producto.`);
-          return prev;
-        }
-      }
-      return prev;
-    });
-    return success;
+    const current = cart.find((item) => item.id === id);
+    if (!current) return false;
+    if (newQty > current.maxQuantity) {
+      alert(`Solo hay ${current.maxQuantity} unidades disponibles de este producto.`);
+      return false;
+    }
+    setCart((prev) => prev.map((item) => (item.id === id ? { ...item, quantity: newQty } : item)));
+    return true;
   };
 
   const clearCart = () => {

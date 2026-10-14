@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { itemService } from '../services/itemService';
 import type { Item } from '../types';
 import { useCart } from '../contexts/CartContext';
-import { getWhatsAppUrl, STORE_CONFIG } from '../config/storeConfig';
+import { getWhatsAppUrl, STORE_CONFIG, normKey, sedeDe } from '../config/storeConfig';
 import FormattedDescription from './FormattedDescription';
 import { ProductCard } from './ProductCard';
 import { SiteFooter, SiteHeader, TopStrip, WhatsAppIcon } from './SiteChrome';
 import CartDrawer, { QtyStepper } from './CartDrawer';
-import EntregaJujuy, { ENTREGA_INICIAL, entregaMensaje, esDeSedeJujuy, type Entrega } from './EntregaJujuy';
+import EntregaJujuy, { ENTREGA_INICIAL, RetiroSede, entregaMensaje, esDeSedeJujuy, retiroSedeMensaje, type Entrega } from './EntregaJujuy';
 import { conditionLabel, formatPrice, priceOf, capitalize } from '../lib/format';
 import {
     X,
@@ -161,17 +161,21 @@ export default function StoreProduct({ id }: { id: string }) {
                 setItem(data);
                 setSelectedVariantId(data.id);
 
-                // Cargar variantes si pertenece a un grupo
-                if (data.storeGroup) {
-                    const groupItems = await itemService.getPublicItemsByGroup(data.storeGroup);
-                    if (groupItems.length > 1) {
-                        setVariants(groupItems);
-                    }
+                const allPublic = await itemService.getPublicItems();
+
+                // Variantes: mismo storeGroup; sin grupo, el mismo producto por título
+                // (así un producto cargado en cada sede se muestra junto, igual que en el catálogo)
+                const titleKey = (i: Item) => (i.storeTitle || i.productName || '').trim().toLowerCase();
+                const groupItems = data.storeGroup
+                    ? await itemService.getPublicItemsByGroup(data.storeGroup)
+                    : allPublic.filter(i => !i.storeGroup && titleKey(i) === titleKey(data));
+                if (groupItems.length > 1) {
+                    setVariants(groupItems);
                 }
+                const siblingIds = new Set(groupItems.map(i => i.id));
 
                 // Cargar relacionados
-                const allPublic = await itemService.getPublicItems();
-                const filtered = allPublic.filter(i => i.id !== data.id && (data.storeGroup ? i.storeGroup !== data.storeGroup : true));
+                const filtered = allPublic.filter(i => i.id !== data.id && !siblingIds.has(i.id) && (data.storeGroup ? i.storeGroup !== data.storeGroup : true));
 
                 let matches = filtered.filter(i => i.category && i.category === data.category);
                 if (matches.length < 4) {
@@ -229,6 +233,36 @@ export default function StoreProduct({ id }: { id: string }) {
     const currentLocation = activeSelectedVariant ? activeSelectedVariant.location : (item?.location ?? '');
     const currentCondition = activeSelectedVariant ? activeSelectedVariant.condition : (item?.condition ?? 'nuevo');
     const enJujuy = esDeSedeJujuy(currentLocation);
+    const sedeActual = sedeDe(currentLocation);
+
+    // Sedes donde está este producto (si hay más de una, se elige primero la sede)
+    const sedesProducto = (() => {
+        const map = new Map<string, { key: string; label: string; minPrice: number; maxPrice: number; stock: number }>();
+        for (const v of mergedVariants) {
+            const key = normKey(v.location || '');
+            const label = sedeDe(v.location)?.nombre || capitalize(v.location || 'Sin ubicación');
+            const ex = map.get(key);
+            if (ex) {
+                ex.minPrice = Math.min(ex.minPrice, v.price);
+                ex.maxPrice = Math.max(ex.maxPrice, v.price);
+                ex.stock += v.quantity;
+            } else {
+                map.set(key, { key, label, minPrice: v.price, maxPrice: v.price, stock: v.quantity });
+            }
+        }
+        return Array.from(map.values());
+    })();
+    const multiSede = sedesProducto.length > 1;
+    const currentLocKey = normKey(currentLocation || '');
+    const variantesSede = multiSede ? mergedVariants.filter(v => normKey(v.location || '') === currentLocKey) : mergedVariants;
+    const showVariantList = variantesSede.length > 1;
+
+    const pickSede = (key: string) => {
+        const enSede = mergedVariants.filter(v => normKey(v.location || '') === key);
+        const mismoNombre = enSede.find(v => v.quantity > 0 && v.variantName === (activeSelectedVariant?.variantName || ''));
+        const elegida = mismoNombre || enSede.find(v => v.quantity > 0) || enSede[0];
+        if (elegida) setSelectedVariantId(elegida.ids[0]);
+    };
 
     useEffect(() => {
         setBuyQty(1);
@@ -317,6 +351,7 @@ export default function StoreProduct({ id }: { id: string }) {
         text += `🔗 Enlace: ${window.location.href}\n`;
         text += `=====================================\n`;
         if (enJujuy) text += `${entregaMensaje(entrega)}=====================================\n`;
+        else if (sedeActual?.direccion) text += `${retiroSedeMensaje(sedeActual)}=====================================\n`;
         text += `¡Hola! Me gustaría coordinar la compra de este producto de la tienda.`;
 
         window.open(getWhatsAppUrl(text), '_blank');
@@ -540,12 +575,61 @@ export default function StoreProduct({ id }: { id: string }) {
                             </span>
                         </div>
 
-                        {hasOptions && (
+                        {multiSede && (
+                            <fieldset className="flex flex-col gap-2.5">
+                                <legend className="label-mono text-muted mb-2.5">¿Dónde lo retirás?</legend>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    {sedesProducto.map(sd => {
+                                        const isSel = sd.key === currentLocKey;
+                                        const horario = sedeDe(sd.label)?.horario;
+                                        const agotado = sd.stock <= 0;
+                                        return (
+                                            <button
+                                                key={sd.key}
+                                                type="button"
+                                                onClick={() => pickSede(sd.key)}
+                                                disabled={agotado}
+                                                aria-pressed={isSel}
+                                                className={`text-left rounded-[2px] p-3.5 flex flex-col gap-1.5 transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                                                    agotado
+                                                        ? 'opacity-40 border border-line bg-surface'
+                                                        : isSel
+                                                        ? 'border-2 border-ink bg-sunken'
+                                                        : 'border border-line bg-surface hover:border-ink'
+                                                }`}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <span
+                                                        className={`w-4 h-4 shrink-0 rounded-full border-2 flex items-center justify-center ${isSel ? 'border-ink' : 'border-muted'}`}
+                                                        aria-hidden="true"
+                                                    >
+                                                        {isSel && <span className="w-2 h-2 rounded-full bg-signal" />}
+                                                    </span>
+                                                    <span className="font-semibold text-ink">{sd.label}</span>
+                                                </span>
+                                                {horario && <span className="text-xs text-muted pl-6">{horario}</span>}
+                                                <span className="flex items-baseline justify-between gap-2 pl-6">
+                                                    <span className="font-mono font-medium text-ink">
+                                                        {sd.minPrice !== sd.maxPrice && <span className="text-xs text-muted mr-1">desde</span>}
+                                                        {formatPrice(sd.minPrice)}
+                                                    </span>
+                                                    <span className={`text-xs ${sd.stock === 1 ? 'text-signal-ink font-semibold' : 'text-muted'}`}>
+                                                        {sd.stock === 1 ? 'Última unidad' : sd.stock > 0 ? `${sd.stock} disp.` : 'Agotado'}
+                                                    </span>
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </fieldset>
+                        )}
+
+                        {showVariantList && (
                             <fieldset className="flex flex-col gap-2.5">
                                 <legend className="label-mono text-muted mb-2.5">
-                                    Elegí una opción · {mergedVariants.length} disponibles
+                                    Elegí una opción · {variantesSede.length} disponibles
                                 </legend>
-                                {mergedVariants.map(v => {
+                                {variantesSede.map(v => {
                                     const isSelected = v.ids.includes(selectedVariantId) || (activeSelectedVariant === v);
                                     const soldOut = v.quantity <= 0;
                                     return (
@@ -574,7 +658,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                                     <span className="block font-semibold text-ink truncate">{v.variantName || 'Opción principal'}</span>
                                                     <span className="block text-xs text-muted mt-0.5">
                                                         {conditionLabel[v.condition] || v.condition}
-                                                        {v.location ? ` · ${capitalize(v.location)}` : ''}
+                                                        {v.location && !multiSede ? ` · ${capitalize(v.location)}` : ''}
                                                     </span>
                                                 </span>
                                             </span>
@@ -597,6 +681,7 @@ export default function StoreProduct({ id }: { id: string }) {
                                     <span className="text-sm text-muted">{currentStock} unidad{currentStock !== 1 ? 'es' : ''} disponible{currentStock !== 1 ? 's' : ''}</span>
                                 </div>
                                 {enJujuy && <EntregaJujuy idPrefix="ficha-entrega" value={entrega} onChange={setEntrega} />}
+                                {!enJujuy && sedeActual?.direccion && <RetiroSede sede={sedeActual} />}
                                 <button
                                     type="button"
                                     onClick={handleAddToCart}
@@ -709,7 +794,7 @@ export default function StoreProduct({ id }: { id: string }) {
                 <div className="flex items-center gap-3">
                     <div className="min-w-0 shrink-0">
                         <span className="label-mono text-muted block truncate max-w-[9rem]">
-                            {activeSelectedVariant?.variantName || 'Precio'}
+                            {[activeSelectedVariant?.variantName, multiSede ? sedeActual?.nombre : ''].filter(Boolean).join(' · ') || 'Precio'}
                         </span>
                         <span className="font-mono font-medium text-xl text-ink leading-none">{formatPrice(currentPrice)}</span>
                     </div>
